@@ -170,9 +170,15 @@ func UnwrapEvent(ctx context.Context, event json.RawMessage) func(yield func(jso
 }
 
 func (app *App) Invoke(ctx context.Context, event json.RawMessage) (any, error) {
+	ctx = slogutils.With(ctx,
+		"app_name", "cflog2otel",
+		"app_version", Version,
+	)
 	if lambCtx, ok := lambdacontext.FromContext(ctx); ok {
 		ctx = slogutils.With(ctx,
 			"aws_request_id", lambCtx.AwsRequestID,
+			"function_name", lambdacontext.FunctionName,
+			"function_version", lambdacontext.FunctionVersion,
 		)
 	}
 	slog.InfoContext(ctx, "received invoke request")
