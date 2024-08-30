@@ -430,6 +430,16 @@ func LenDataPoints(data metricdata.Aggregation) int {
 }
 
 func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
+	if config.Filter != nil {
+		isTarget, err := config.Filter.Eval(ctx, vars)
+		if err != nil {
+			return metrics, oops.Wrapf(err, "failed to evaluate filter")
+		}
+		if !isTarget {
+			slog.DebugContext(ctx, "not a target log, skipping")
+			return metrics, nil
+		}
+	}
 	switch config.Type {
 	case AggregationTypeCount:
 		return aggregateForCountMetric(ctx, metrics, config, vars)
@@ -451,16 +461,6 @@ func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariab
 }
 
 func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
-	if config.Filter != nil {
-		isTarget, err := config.Filter.Eval(ctx, vars)
-		if err != nil {
-			return metrics, oops.Wrapf(err, "failed to evaluate filter")
-		}
-		if !isTarget {
-			slog.DebugContext(ctx, "not a target log, skipping")
-			return metrics, nil
-		}
-	}
 	if metrics.Data == nil {
 		metrics.Data = metricdata.Sum[int64]{
 			DataPoints:  make([]metricdata.DataPoint[int64], 0),
@@ -500,16 +500,7 @@ func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, co
 }
 
 func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
-	if config.Filter != nil {
-		isTarget, err := config.Filter.Eval(ctx, vars)
-		if err != nil {
-			return metrics, oops.Wrapf(err, "failed to evaluate filter")
-		}
-		if !isTarget {
-			slog.DebugContext(ctx, "not a target log, skipping")
-			return metrics, nil
-		}
-	}
+
 	if metrics.Data == nil {
 		metrics.Data = metricdata.Sum[float64]{
 			DataPoints:  make([]metricdata.DataPoint[float64], 0),
