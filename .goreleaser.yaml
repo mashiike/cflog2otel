@@ -1,4 +1,4 @@
-version: 1
+version: 2
 
 before:
   hooks:
@@ -7,7 +7,8 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    main: ./cmd/cflog2otel/main.go
+    dir: ./cmd/cflog2otel
+    main: main.go
     binary: cflog2otel
     ldflags:
       - -s -w
@@ -23,14 +24,12 @@ release:
   prerelease: false
 
 archives:
-  - files:
-    - LICENSE
-    - README.md
-    - CHANGELOG.md
-    - CREDITS
-
-snapshot:
-  name_template: "{{ .Env.NIGHTLY_VERSION }}"
+  - format: tar.gz
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - CREDITS
 
 changelog:
   sort: asc
