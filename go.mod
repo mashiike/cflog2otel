@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.31
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.61.0
-	github.com/fatih/color v1.15.0
+	github.com/fatih/color v1.17.0
 	github.com/fujiwara/lamblocal v0.0.4
 	github.com/fujiwara/ssm-lookup v0.1.0
 	github.com/google/cel-go v0.21.0
@@ -52,7 +52,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/oklog/ulid/v2 v2.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/samber/lo v1.38.1 // indirect
