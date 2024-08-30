@@ -38,10 +38,10 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 		return nil, oops.Wrapf(err, "failed to load AWS config")
 	}
 	client := s3.NewFromConfig(awsCfg)
-	return NewWithClient(ctx, cfg, client)
+	return NewWithClient(cfg, client)
 }
 
-func NewWithClient(ctx context.Context, cfg *Config, client manager.DownloadAPIClient) (*App, error) {
+func NewWithClient(cfg *Config, client manager.DownloadAPIClient) (*App, error) {
 	return &App{
 		cfg:        cfg,
 		downloader: manager.NewDownloader(client),
@@ -170,15 +170,9 @@ func UnwrapEvent(ctx context.Context, event json.RawMessage) func(yield func(jso
 }
 
 func (app *App) Invoke(ctx context.Context, event json.RawMessage) (any, error) {
-	ctx = slogutils.With(ctx,
-		"app_name", "cflog2otel",
-		"app_version", Version,
-	)
 	if lambCtx, ok := lambdacontext.FromContext(ctx); ok {
 		ctx = slogutils.With(ctx,
 			"aws_request_id", lambCtx.AwsRequestID,
-			"function_name", lambdacontext.FunctionName,
-			"function_version", lambdacontext.FunctionVersion,
 		)
 	}
 	slog.InfoContext(ctx, "received invoke request")
@@ -208,7 +202,11 @@ func (app *App) Process(ctx context.Context, notifications []events.S3EventRecor
 		return oops.Wrapf(err, "failed to create OTLP exporter")
 	}
 	slog.InfoContext(ctx, "starting export to otel metrics", "endpoint", endpointURL)
-	defer exporter.Shutdown(ctx)
+	defer func() {
+		if err := exporter.Shutdown(ctx); err != nil {
+			slog.WarnContext(ctx, "failed to shutdown exporter", "error", err)
+		}
+	}()
 	recourceMetrics := make([]*metricdata.ResourceMetrics, 0)
 	for _, notification := range notifications {
 		slog.InfoContext(ctx, "processing notification", "bucket", notification.S3.Bucket.Name, "key", notification.S3.Object.Key)
@@ -311,9 +309,9 @@ func ToAttributes(ctx context.Context, cfgs []AttributeConfig, celVariables *CEL
 		case string:
 			attrs = append(attrs, attribute.String(cfg.Key, v))
 		case int64:
-			attrs = append(attrs, attribute.Int64(cfg.Key, int64(v)))
+			attrs = append(attrs, attribute.Int64(cfg.Key, v))
 		case float64:
-			attrs = append(attrs, attribute.Float64(cfg.Key, float64(v)))
+			attrs = append(attrs, attribute.Float64(cfg.Key, v))
 		case bool:
 			attrs = append(attrs, attribute.Bool(cfg.Key, v))
 		default:
@@ -414,7 +412,7 @@ func Aggregate(ctx context.Context, cfg *Config, notification events.S3EventReco
 		r.ScopeMetrics[0].Metrics = metrics
 		resp = append(resp, r)
 	}
-	return resourceMetrics, nil
+	return resp, nil
 }
 
 func LenDataPoints(data metricdata.Aggregation) int {

@@ -71,7 +71,7 @@ func TestE2E(t *testing.T) {
 	))
 	defer server.Close()
 	cfg.Otel.SetEndpointURL(server.URL)
-	app, err := cflog2otel.NewWithClient(ctx, cfg, client)
+	app, err := cflog2otel.NewWithClient(cfg, client)
 	require.NoError(t, err)
 
 	payload, err := os.ReadFile("testdata/s3_notification.json")

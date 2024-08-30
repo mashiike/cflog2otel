@@ -26,13 +26,15 @@ func main() {
 
 func _main(ctx context.Context) error {
 	var (
-		logLevel    string
-		logPrettify bool
-		configPath  string
+		logLevel           string
+		logPrettify        bool
+		configPath         string
+		configValidateOnly bool
 	)
 	flag.StringVar(&logLevel, "log-level", "info", "log level")
 	flag.BoolVar(&logPrettify, "log-prettify", false, "log prettify")
 	flag.StringVar(&configPath, "config", "", "config file path")
+	flag.BoolVar(&configValidateOnly, "config-validate-only", false, "validate config only")
 	flag.VisitAll(flagx.EnvToFlag)
 	flag.Parse()
 
@@ -40,6 +42,9 @@ func _main(ctx context.Context) error {
 	cfg := cflog2otel.DefaultConfig()
 	if err := cfg.Load(configPath, cflog2otel.WithContext(ctx)); err != nil {
 		return oops.Wrapf(err, "failed to load config")
+	}
+	if configValidateOnly {
+		return nil
 	}
 	app, err := cflog2otel.New(ctx, cfg)
 	if err != nil {

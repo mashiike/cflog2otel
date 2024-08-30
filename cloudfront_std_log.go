@@ -24,15 +24,15 @@ type CELVariablesLog struct {
 	ClientIP               *string   `json:"clientIp" cel:"clientIp"`
 	CsMethod               *string   `json:"csMethod" cel:"csMethod"`
 	CsHost                 *string   `json:"csHost" cel:"csHost"`
-	CsUriStem              *string   `json:"csUriStem" cel:"csUriStem"`
+	CsURIStem              *string   `json:"csUriStem" cel:"csUriStem"`
 	ScStatus               *int      `json:"scStatus" cel:"scStatus"`
 	ScStatusCategory       *string   `json:"scStatusCategory" cel:"scStatusCategory"`
 	CsReferer              *string   `json:"csReferer" cel:"csReferer"`
 	CsUserAgent            *string   `json:"csUserAgent" cel:"csUserAgent"`
-	CsUriQuery             *string   `json:"csUriQuery" cel:"csUriQuery"`
+	CsURIQuery             *string   `json:"csUriQuery" cel:"csUriQuery"`
 	CsCookie               *string   `json:"csCookie" cel:"csCookie"`
 	EdgeResultType         *string   `json:"edgeResultType" cel:"edgeResultType"`
-	EdgeRequestId          *string   `json:"edgeRequestId" cel:"edgeRequestId"`
+	EdgeRequestID          *string   `json:"edgeRequestId" cel:"edgeRequestId"`
 	HostHeader             *string   `json:"hostHeader" cel:"hostHeader"`
 	CsProtocol             *string   `json:"csProtocol" cel:"csProtocol"`
 	CsBytes                *int      `json:"csBytes" cel:"csBytes"`
@@ -103,7 +103,7 @@ func (l *CELVariablesLog) CloudFrontStandardLogFieldSetters() map[string]func(st
 		return nil
 	}
 	setters["cs-uri-stem"] = func(s string) error {
-		l.CsUriStem = toPtrString(s)
+		l.CsURIStem = toPtrString(s)
 		return nil
 	}
 	setters["sc-status"] = func(s string) error {
@@ -133,7 +133,7 @@ func (l *CELVariablesLog) CloudFrontStandardLogFieldSetters() map[string]func(st
 		return nil
 	}
 	setters["cs-uri-query"] = func(s string) error {
-		l.CsUriQuery = toPtrString(s)
+		l.CsURIQuery = toPtrString(s)
 		return nil
 	}
 	setters["cs(Cookie)"] = func(s string) error {
@@ -145,7 +145,7 @@ func (l *CELVariablesLog) CloudFrontStandardLogFieldSetters() map[string]func(st
 		return nil
 	}
 	setters["x-edge-request-id"] = func(s string) error {
-		l.EdgeRequestId = toPtrString(s)
+		l.EdgeRequestID = toPtrString(s)
 		return nil
 	}
 	setters["x-host-header"] = func(s string) error {

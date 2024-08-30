@@ -29,18 +29,18 @@ type CELVariablesS3Bucket struct {
 }
 
 type CELVariablesCloudFront struct {
-	DistributionId string `json:"distributionId" cel:"distributionId"`
+	DistributionID string `json:"distributionId" cel:"distributionId"`
 }
 
 type CELVariablesS3UserIdentity struct {
-	PrincipalId string `json:"principalId" cel:"principalId"`
+	PrincipalID string `json:"principalId" cel:"principalId"`
 }
 
 type CELVariablesS3Object struct {
 	Key       string `json:"key" cel:"key"`
 	Size      int64  `json:"size" cel:"size"`
 	ETag      string `json:"eTag" cel:"eTag"`
-	VersionId string `json:"versionId" cel:"versionId"`
+	VersionID string `json:"versionId" cel:"versionId"`
 	Sequencer string `json:"sequencer" cel:"sequencer"`
 }
 
@@ -49,7 +49,7 @@ func NewCELVariables(record events.S3EventRecord, distributionID string, logLine
 		Bucket: CELVariablesS3Bucket{
 			Name: record.S3.Bucket.Name,
 			OwnerIdentity: CELVariablesS3UserIdentity{
-				PrincipalId: record.S3.Bucket.OwnerIdentity.PrincipalID,
+				PrincipalID: record.S3.Bucket.OwnerIdentity.PrincipalID,
 			},
 			Arn: record.S3.Bucket.Arn,
 		},
@@ -57,11 +57,11 @@ func NewCELVariables(record events.S3EventRecord, distributionID string, logLine
 			Key:       record.S3.Object.Key,
 			Size:      record.S3.Object.Size,
 			ETag:      record.S3.Object.ETag,
-			VersionId: record.S3.Object.VersionID,
+			VersionID: record.S3.Object.VersionID,
 			Sequencer: record.S3.Object.Sequencer,
 		},
 		CloudFront: CELVariablesCloudFront{
-			DistributionId: distributionID,
+			DistributionID: distributionID,
 		},
 		Log: logLine,
 	}

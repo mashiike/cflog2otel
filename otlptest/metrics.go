@@ -3,6 +3,7 @@ package otlptest
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"sync"
 
@@ -95,6 +96,8 @@ func (mc *MetricsCollector) goServe() {
 	mc.wg.Add(1)
 	go func() {
 		defer mc.wg.Done()
-		mc.server.Serve(mc.Listener)
+		if err := mc.server.Serve(mc.Listener); err != nil {
+			slog.Error("Failed to serve gRPC server", "error", err)
+		}
 	}()
 }
