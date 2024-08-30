@@ -1,0 +1,95 @@
+{
+  "resource_metrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "aws.cloudfront.distribution_id",
+            "value": {
+              "Value": {
+                "StringValue": "EMLARXS9EXAMPLE"
+              }
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "Value": {
+                "StringValue": "Amazon CloudFront"
+              }
+            }
+          }
+        ]
+      },
+      "scope_metrics": [
+        {
+          "scope": {
+            "name": "test"
+          },
+          "metrics": [
+            {
+              "name": "http.server.requests",
+              "description": "The number of HTTP requests",
+              "Data": {
+                "Sum": {
+                  "data_points": [
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "2xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1575493320000000000,
+                      "Value": {
+                        "AsInt": 3
+                      }
+                    },
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "5xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1576276560000000000,
+                      "Value": {
+                        "AsInt": 2
+                      }
+                    },
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "5xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1576276620000000000,
+                      "Value": {
+                        "AsInt": 1
+                      }
+                    }
+                  ],
+                  "aggregation_temporality": 2,
+                  "is_monotonic": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
