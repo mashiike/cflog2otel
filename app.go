@@ -431,14 +431,36 @@ func LenDataPoints(data metricdata.Aggregation) int {
 
 func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
 	switch config.Type {
-	case AggregationTypeCounter:
-		return aggregateForCounterMetric(ctx, metrics, config, vars)
+	case AggregationTypeCount:
+		return aggregateForCountMetric(ctx, metrics, config, vars)
+	case AggregationTypeSum:
+		return aggregateForSumMetric(ctx, metrics, config, vars)
 	default:
-		return metricdata.Metrics{}, oops.Errorf("unsupported aggregation type")
+		return metricdata.Metrics{}, oops.Errorf("unsupported aggregation type %q", config.Type)
 	}
 }
 
-func aggregateForCounterMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
+func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariables) (time.Time, attribute.Set, error) {
+	t := vars.Log.Timestamp.Truncate(time.Minute)
+	attrs, err := ToAttributes(ctx, config.Attributes, vars)
+	if err != nil {
+		return time.Time{}, attribute.Set{}, oops.Wrapf(err, "failed to convert attributes")
+	}
+	attrSet := attribute.NewSet(attrs...)
+	return t, attrSet, nil
+}
+
+func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
+	if config.Filter != nil {
+		isTarget, err := config.Filter.Eval(ctx, vars)
+		if err != nil {
+			return metrics, oops.Wrapf(err, "failed to evaluate filter")
+		}
+		if !isTarget {
+			slog.DebugContext(ctx, "not a target log, skipping")
+			return metrics, nil
+		}
+	}
 	if metrics.Data == nil {
 		metrics.Data = metricdata.Sum[int64]{
 			DataPoints:  make([]metricdata.DataPoint[int64], 0),
@@ -450,12 +472,10 @@ func aggregateForCounterMetric(ctx context.Context, metrics metricdata.Metrics, 
 	if !ok {
 		return metrics, oops.Errorf("unsupported data type for counter")
 	}
-	startTime := vars.Log.Timestamp.Truncate(time.Minute)
-	attrs, err := ToAttributes(ctx, config.Attributes, vars)
+	startTime, attrSet, err := getAggregateAxis(ctx, config, vars)
 	if err != nil {
-		return metrics, oops.Wrapf(err, "failed to convert attributes")
+		return metrics, oops.Wrapf(err, "failed to get aggregate axis")
 	}
-	attrSet := attribute.NewSet(attrs...)
 	var found bool
 	for i, dp := range data.DataPoints {
 		if !dp.StartTime.Equal(startTime) {
@@ -472,6 +492,60 @@ func aggregateForCounterMetric(ctx context.Context, metrics metricdata.Metrics, 
 		data.DataPoints = append(data.DataPoints, metricdata.DataPoint[int64]{
 			StartTime:  startTime,
 			Value:      1,
+			Attributes: attrSet,
+		})
+	}
+	metrics.Data = data
+	return metrics, nil
+}
+
+func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
+	if config.Filter != nil {
+		isTarget, err := config.Filter.Eval(ctx, vars)
+		if err != nil {
+			return metrics, oops.Wrapf(err, "failed to evaluate filter")
+		}
+		if !isTarget {
+			slog.DebugContext(ctx, "not a target log, skipping")
+			return metrics, nil
+		}
+	}
+	if metrics.Data == nil {
+		metrics.Data = metricdata.Sum[float64]{
+			DataPoints:  make([]metricdata.DataPoint[float64], 0),
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: config.IsMonotonic,
+		}
+	}
+	data, ok := metrics.Data.(metricdata.Sum[float64])
+	if !ok {
+		return metrics, oops.Errorf("unsupported data type for counter")
+	}
+	startTime, attrSet, err := getAggregateAxis(ctx, config, vars)
+	if err != nil {
+		return metrics, oops.Wrapf(err, "failed to get aggregate axis")
+	}
+	value, err := config.Value.Eval(ctx, vars)
+	if err != nil {
+		return metrics, oops.Wrapf(err, "failed to evaluate value")
+	}
+	var found bool
+	for i, dp := range data.DataPoints {
+		if !dp.StartTime.Equal(startTime) {
+			continue
+		}
+		if !dp.Attributes.Equals(&attrSet) {
+			continue
+		}
+
+		data.DataPoints[i].Value += value
+		found = true
+		break
+	}
+	if !found {
+		data.DataPoints = append(data.DataPoints, metricdata.DataPoint[float64]{
+			StartTime:  startTime,
+			Value:      value,
 			Attributes: attrSet,
 		})
 	}

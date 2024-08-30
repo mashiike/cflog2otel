@@ -30,5 +30,19 @@ local cel = std.native('cel');
         },
       ],
     },
+    {
+      name: 'http.server.total_bytes',
+      description: 'The total number of bytes sent by the server',
+      type: 'Sum',
+      unit: 'Byte',
+      attributes: [
+        {
+          key: 'http.status_code',
+          value: cel('log.scStatusCategory'),
+        },
+      ],
+      value: cel('double(log.scBytes)'),
+      is_monotonic: true,
+    },
   ],
 }

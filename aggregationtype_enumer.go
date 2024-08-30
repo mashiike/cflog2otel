@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-const _AggregationTypeName = "Counter"
+const _AggregationTypeName = "CountSumHistogram"
 
-var _AggregationTypeIndex = [...]uint8{0, 7}
+var _AggregationTypeIndex = [...]uint8{0, 5, 8, 17}
 
-const _AggregationTypeLowerName = "counter"
+const _AggregationTypeLowerName = "countsumhistogram"
 
 func (i AggregationType) String() string {
 	if i < 0 || i >= AggregationType(len(_AggregationTypeIndex)-1) {
@@ -25,18 +25,26 @@ func (i AggregationType) String() string {
 // Re-run the stringer command to generate them again.
 func _AggregationTypeNoOp() {
 	var x [1]struct{}
-	_ = x[AggregationTypeCounter-(0)]
+	_ = x[AggregationTypeCount-(0)]
+	_ = x[AggregationTypeSum-(1)]
+	_ = x[AggregationTypeHistogram-(2)]
 }
 
-var _AggregationTypeValues = []AggregationType{AggregationTypeCounter}
+var _AggregationTypeValues = []AggregationType{AggregationTypeCount, AggregationTypeSum, AggregationTypeHistogram}
 
 var _AggregationTypeNameToValueMap = map[string]AggregationType{
-	_AggregationTypeName[0:7]:      AggregationTypeCounter,
-	_AggregationTypeLowerName[0:7]: AggregationTypeCounter,
+	_AggregationTypeName[0:5]:       AggregationTypeCount,
+	_AggregationTypeLowerName[0:5]:  AggregationTypeCount,
+	_AggregationTypeName[5:8]:       AggregationTypeSum,
+	_AggregationTypeLowerName[5:8]:  AggregationTypeSum,
+	_AggregationTypeName[8:17]:      AggregationTypeHistogram,
+	_AggregationTypeLowerName[8:17]: AggregationTypeHistogram,
 }
 
 var _AggregationTypeNames = []string{
-	_AggregationTypeName[0:7],
+	_AggregationTypeName[0:5],
+	_AggregationTypeName[5:8],
+	_AggregationTypeName[8:17],
 }
 
 // AggregationTypeString retrieves an enum value from the enum constants string name.
