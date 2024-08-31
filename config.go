@@ -34,7 +34,6 @@ type ScopeConfig struct {
 }
 
 type MetricsConfig struct {
-	Condition   *CELCapable[bool]    `json:"condition,omitempty"`
 	Name        string               `json:"name,omitempty"`
 	Description string               `json:"description,omitempty"`
 	Unit        string               `json:"unit,omitempty"`
