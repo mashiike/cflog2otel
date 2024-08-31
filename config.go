@@ -34,14 +34,15 @@ type ScopeConfig struct {
 }
 
 type MetricsConfig struct {
-	Name        string               `json:"name,omitempty"`
-	Description string               `json:"description,omitempty"`
-	Unit        string               `json:"unit,omitempty"`
-	Type        AggregationType      `json:"type,omitempty"`
-	Attributes  []AttributeConfig    `json:"attributes,omitempty"`
-	Filter      *CELCapable[bool]    `json:"filter,omitempty"`
-	Value       *CELCapable[float64] `json:"value,omitempty"`
-	IsMonotonic bool                 `json:"is_monotonic,omitempty"`
+	Name         string               `json:"name,omitempty"`
+	Description  string               `json:"description,omitempty"`
+	Unit         string               `json:"unit,omitempty"`
+	Type         AggregationType      `json:"type,omitempty"`
+	Attributes   []AttributeConfig    `json:"attributes,omitempty"`
+	Filter       *CELCapable[bool]    `json:"filter,omitempty"`
+	Value        *CELCapable[float64] `json:"value,omitempty"`
+	IsMonotonic  bool                 `json:"is_monotonic,omitempty"`
+	IsCumulative bool                 `json:"is_cumulative,omitempty"`
 }
 
 func DefaultConfig() *Config {

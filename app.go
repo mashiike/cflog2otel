@@ -462,9 +462,13 @@ func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariab
 
 func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
 	if metrics.Data == nil {
+		temporality := metricdata.DeltaTemporality
+		if config.IsCumulative {
+			temporality = metricdata.CumulativeTemporality
+		}
 		metrics.Data = metricdata.Sum[int64]{
 			DataPoints:  make([]metricdata.DataPoint[int64], 0),
-			Temporality: metricdata.CumulativeTemporality,
+			Temporality: temporality,
 			IsMonotonic: true,
 		}
 	}
@@ -501,11 +505,14 @@ func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, co
 }
 
 func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
-
 	if metrics.Data == nil {
+		temporality := metricdata.DeltaTemporality
+		if config.IsCumulative {
+			temporality = metricdata.CumulativeTemporality
+		}
 		metrics.Data = metricdata.Sum[float64]{
 			DataPoints:  make([]metricdata.DataPoint[float64], 0),
-			Temporality: metricdata.CumulativeTemporality,
+			Temporality: temporality,
 			IsMonotonic: config.IsMonotonic,
 		}
 	}

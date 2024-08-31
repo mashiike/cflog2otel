@@ -72,7 +72,7 @@
                 "Value": 1
               }
             ],
-            "Temporality": "CumulativeTemporality",
+            "Temporality": "DeltaTemporality",
             "IsMonotonic": true
           }
         },
@@ -125,7 +125,7 @@
                 "Value": 900
               }
             ],
-            "Temporality": "CumulativeTemporality",
+            "Temporality": "DeltaTemporality",
             "IsMonotonic": true
           }
         }

@@ -114,7 +114,7 @@
                 "Value": 1
               }
             ],
-            "Temporality": "CumulativeTemporality",
+            "Temporality": "DeltaTemporality",
             "IsMonotonic": true
           }
         }
