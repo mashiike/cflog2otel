@@ -46,6 +46,7 @@
                         }
                       ],
                       "start_time_unix_nano": 1575493320000000000,
+                      "time_unix_nano": 1575493379999999999,
                       "Value": {
                         "AsInt": 3
                       }
@@ -62,6 +63,7 @@
                         }
                       ],
                       "start_time_unix_nano": 1576276560000000000,
+                      "time_unix_nano": 1576276619999999999,
                       "Value": {
                         "AsInt": 2
                       }
@@ -78,6 +80,7 @@
                         }
                       ],
                       "start_time_unix_nano": 1576276620000000000,
+                      "time_unix_nano": 1576276679999999999,
                       "Value": {
                         "AsInt": 1
                       }

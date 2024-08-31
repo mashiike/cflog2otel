@@ -491,6 +491,7 @@ func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, co
 	if !found {
 		data.DataPoints = append(data.DataPoints, metricdata.DataPoint[int64]{
 			StartTime:  startTime,
+			Time:       startTime.Add(time.Minute).Add(-time.Nanosecond),
 			Value:      1,
 			Attributes: attrSet,
 		})
@@ -536,6 +537,7 @@ func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, conf
 	if !found {
 		data.DataPoints = append(data.DataPoints, metricdata.DataPoint[float64]{
 			StartTime:  startTime,
+			Time:       startTime.Add(time.Minute).Add(-time.Nanosecond),
 			Value:      value,
 			Attributes: attrSet,
 		})
