@@ -19,8 +19,8 @@
     {
       "Scope": {
         "Name": "test",
-        "Version": "",
-        "SchemaURL": ""
+        "Version": "1.0.0",
+        "SchemaURL": "https://example.com/schemas/1.0.0"
       },
       "Metrics": [
         {

@@ -19,7 +19,7 @@ type CELVariablesLog struct {
 	Date                   string    `json:"date" cel:"date"`
 	Time                   string    `json:"time" cel:"time"`
 	Timestamp              time.Time `json:"timestamp" cel:"timestamp"`
-	EdgeLocation           *string   `json:"edgeLocation" cel:"edgeLocation"`
+	EdgeLocation           *string   `json:"xEdgeLocation" cel:"xEdgeLocation"`
 	ScBytes                *int      `json:"scBytes" cel:"scBytes"`
 	ClientIP               *string   `json:"clientIp" cel:"clientIp"`
 	CsMethod               *string   `json:"csMethod" cel:"csMethod"`
@@ -31,8 +31,8 @@ type CELVariablesLog struct {
 	CsUserAgent            *string   `json:"csUserAgent" cel:"csUserAgent"`
 	CsURIQuery             *string   `json:"csUriQuery" cel:"csUriQuery"`
 	CsCookie               *string   `json:"csCookie" cel:"csCookie"`
-	EdgeResultType         *string   `json:"edgeResultType" cel:"edgeResultType"`
-	EdgeRequestID          *string   `json:"edgeRequestId" cel:"edgeRequestId"`
+	EdgeResultType         *string   `json:"xEdgeResultType" cel:"xEdgeResultType"`
+	EdgeRequestID          *string   `json:"xEdgeRequestId" cel:"xEdgeRequestId"`
 	HostHeader             *string   `json:"hostHeader" cel:"hostHeader"`
 	CsProtocol             *string   `json:"csProtocol" cel:"csProtocol"`
 	CsBytes                *int      `json:"csBytes" cel:"csBytes"`
@@ -46,7 +46,7 @@ type CELVariablesLog struct {
 	FleEncryptedFields     *int      `json:"fleEncryptedFields" cel:"fleEncryptedFields"`
 	CPort                  *int      `json:"cPort" cel:"cPort"`
 	TimeToFirstByte        *float64  `json:"timeToFirstByte" cel:"timeToFirstByte"`
-	EdgeDetailedResultType *string   `json:"edgeDetailedResultType" cel:"edgeDetailedResultType"`
+	EdgeDetailedResultType *string   `json:"xEdgeDetailedResultType" cel:"xEdgeDetailedResultType"`
 	ScContentType          *string   `json:"scContentType" cel:"scContentType"`
 	ScContentLen           *int      `json:"scContentLen" cel:"scContentLen"`
 	ScRangeStart           *string   `json:"scRangeStart" cel:"scRangeStart"`

@@ -24,7 +24,8 @@
       "scope_metrics": [
         {
           "scope": {
-            "name": "test"
+            "name": "test",
+            "version": "1.0.0"
           },
           "metrics": [
             {
@@ -87,7 +88,8 @@
                 }
               }
             }
-          ]
+          ],
+          "schema_url": "https://example.com/schemas/1.0.0"
         }
       ]
     }
