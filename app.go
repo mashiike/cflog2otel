@@ -450,14 +450,14 @@ func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config Met
 	}
 }
 
-func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariables) (time.Time, attribute.Set, error) {
+func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariables) (time.Time, time.Time, attribute.Set, error) {
 	t := vars.Log.Timestamp.Truncate(time.Minute)
 	attrs, err := ToAttributes(ctx, config.Attributes, vars)
 	if err != nil {
-		return time.Time{}, attribute.Set{}, oops.Wrapf(err, "failed to convert attributes")
+		return time.Time{}, time.Time{}, attribute.Set{}, oops.Wrapf(err, "failed to convert attributes")
 	}
 	attrSet := attribute.NewSet(attrs...)
-	return t, attrSet, nil
+	return t, t.Add(time.Minute), attrSet, nil
 }
 
 func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
@@ -476,13 +476,13 @@ func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, co
 	if !ok {
 		return metrics, oops.Errorf("unsupported data type for counter")
 	}
-	startTime, attrSet, err := getAggregateAxis(ctx, config, vars)
+	startTime, t, attrSet, err := getAggregateAxis(ctx, config, vars)
 	if err != nil {
 		return metrics, oops.Wrapf(err, "failed to get aggregate axis")
 	}
 	var found bool
 	for i, dp := range data.DataPoints {
-		if !dp.StartTime.Equal(startTime) {
+		if !dp.Time.Equal(t) {
 			continue
 		}
 		if !dp.Attributes.Equals(&attrSet) {
@@ -495,7 +495,7 @@ func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, co
 	if !found {
 		data.DataPoints = append(data.DataPoints, metricdata.DataPoint[int64]{
 			StartTime:  startTime,
-			Time:       startTime.Add(time.Minute).Add(-time.Nanosecond),
+			Time:       t,
 			Value:      1,
 			Attributes: attrSet,
 		})
@@ -520,7 +520,7 @@ func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, conf
 	if !ok {
 		return metrics, oops.Errorf("unsupported data type for counter")
 	}
-	startTime, attrSet, err := getAggregateAxis(ctx, config, vars)
+	startTime, t, attrSet, err := getAggregateAxis(ctx, config, vars)
 	if err != nil {
 		return metrics, oops.Wrapf(err, "failed to get aggregate axis")
 	}
@@ -530,7 +530,7 @@ func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, conf
 	}
 	var found bool
 	for i, dp := range data.DataPoints {
-		if !dp.StartTime.Equal(startTime) {
+		if !dp.Time.Equal(t) {
 			continue
 		}
 		if !dp.Attributes.Equals(&attrSet) {
@@ -544,7 +544,7 @@ func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, conf
 	if !found {
 		data.DataPoints = append(data.DataPoints, metricdata.DataPoint[float64]{
 			StartTime:  startTime,
-			Time:       startTime.Add(time.Minute).Add(-time.Nanosecond),
+			Time:       t,
 			Value:      value,
 			Attributes: attrSet,
 		})
