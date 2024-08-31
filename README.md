@@ -61,7 +61,9 @@ local cel = std.native('cel');
     },
   ],
   scope: {
-    name: 'test',
+    name: 'cflog2otel',
+    version: '0.0.0',
+    schema_url: 'https://example.com/schemas/1.0.0',
   },
   metrics: [
     {
@@ -127,7 +129,8 @@ For the above log file, the following metrics aggregation result will be exporte
       "scope_metrics": [
         {
           "scope": {
-            "name": "test"
+            "name": "cflog2otel",
+            "version": "0.0.0"
           },
           "metrics": [
             {
@@ -190,7 +193,8 @@ For the above log file, the following metrics aggregation result will be exporte
                 }
               }
             }
-          ]
+          ],
+          "schema_url": "https://example.com/schemas/1.0.0"
         }
       ]
     }

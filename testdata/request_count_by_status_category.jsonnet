@@ -17,6 +17,8 @@ local cel = std.native('cel');
   ],
   scope: {
     name: 'test',
+    version: '1.0.0',
+    schema_url: 'https://example.com/schemas/1.0.0',
   },
   metrics: [
     {
