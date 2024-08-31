@@ -2,6 +2,7 @@ package cflog2otel
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/url"
 
 	"github.com/samber/oops"
@@ -33,12 +34,15 @@ type ScopeConfig struct {
 }
 
 type MetricsConfig struct {
-	Condition   *CELCapable[bool] `json:"condition,omitempty"`
-	Name        string            `json:"name,omitempty"`
-	Description string            `json:"description,omitempty"`
-	Unit        string            `json:"unit,omitempty"`
-	Type        AggregationType   `json:"type,omitempty"`
-	Attributes  []AttributeConfig `json:"attributes,omitempty"`
+	Condition   *CELCapable[bool]    `json:"condition,omitempty"`
+	Name        string               `json:"name,omitempty"`
+	Description string               `json:"description,omitempty"`
+	Unit        string               `json:"unit,omitempty"`
+	Type        AggregationType      `json:"type,omitempty"`
+	Attributes  []AttributeConfig    `json:"attributes,omitempty"`
+	Filter      *CELCapable[bool]    `json:"filter,omitempty"`
+	Value       *CELCapable[float64] `json:"value,omitempty"`
+	IsMonotonic bool                 `json:"is_monotonic,omitempty"`
 }
 
 func DefaultConfig() *Config {
@@ -90,6 +94,18 @@ func (c *MetricsConfig) Validate() error {
 		if err := a.Validate(); err != nil {
 			return oops.Wrapf(err, "attributes[%d]", i)
 		}
+	}
+	switch c.Type {
+	case AggregationTypeCount:
+		if c.Value != nil {
+			slog.Warn("value is ignored for metric type \"Count\"")
+		}
+	case AggregationTypeSum:
+		if c.Value == nil {
+			return oops.Errorf("value is required for metric type \"Sum\"")
+		}
+	default:
+		return oops.Errorf("unsupported metric type: %s", c.Type)
 	}
 	return nil
 }

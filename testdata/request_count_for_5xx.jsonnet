@@ -20,15 +20,10 @@ local cel = std.native('cel');
   },
   metrics: [
     {
-      name: 'http.server.requests',
-      description: 'The number of HTTP requests',
+      name: 'http.server.5xx_requests',
+      description: 'The number of HTTP requests with status code 5xx',
       type: 'Count',
-      attributes: [
-        {
-          key: 'http.status_code',
-          value: cel('log.scStatusCategory'),
-        },
-      ],
+      filter: cel('log.scStatusCategory == "5xx"'),
     },
   ],
 }
