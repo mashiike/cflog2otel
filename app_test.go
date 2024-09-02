@@ -1,11 +1,12 @@
 package cflog2otel_test
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"io"
 	"os"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -31,7 +32,9 @@ func TestE2E(t *testing.T) {
 			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz"
 		}),
 	).Return(&s3.GetObjectOutput{
-		Body:          io.NopCloser(strings.NewReader(string(bs))),
+		Body: io.NopCloser(
+			bytes.NewReader(gzipData(bs)),
+		),
 		ContentLength: aws.Int64(int64(len(bs))),
 	}, nil)
 	cfg := cflog2otel.DefaultConfig()
@@ -78,4 +81,59 @@ func TestUnwrapEvent_SQSEvent(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, actual, 1)
 	require.JSONEq(t, string(expected), string(actual[0]))
+}
+
+func TestIsGzipped(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     []byte
+		expected bool
+	}{
+		{
+			name:     "valid gzip data",
+			data:     gzipData([]byte("hello, world")),
+			expected: true,
+		},
+		{
+			name:     "invalid gzip header",
+			data:     []byte{0x1f, 0x8c, 0x08, 0x00},
+			expected: false,
+		},
+		{
+			name:     "short data",
+			data:     []byte{0x1f},
+			expected: false,
+		},
+		{
+			name:     "empty data",
+			data:     []byte{},
+			expected: false,
+		},
+		{
+			name:     "valid gzip header with extra data",
+			data:     append(gzipData([]byte("hello, world")), 0x00, 0x01),
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := cflog2otel.IsGzipped(tt.data)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func gzipData(data []byte) []byte {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	_, err := gz.Write(data)
+	if err != nil {
+		panic(err)
+	}
+	err = gz.Close()
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
