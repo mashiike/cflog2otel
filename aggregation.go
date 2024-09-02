@@ -118,6 +118,8 @@ func LenDataPoints(data metricdata.Aggregation) int {
 		return len(data.DataPoints)
 	case metricdata.Sum[float64]:
 		return len(data.DataPoints)
+	case metricdata.Histogram[float64]:
+		return len(data.DataPoints)
 	default:
 		return 0
 	}
@@ -139,6 +141,8 @@ func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config Met
 		return aggregateForCountMetric(ctx, metrics, config, vars)
 	case AggregationTypeSum:
 		return aggregateForSumMetric(ctx, metrics, config, vars)
+	case AggregationTypeHistogram:
+		return aggregateForHistogramMetric(ctx, metrics, config, vars)
 	default:
 		return metricdata.Metrics{}, oops.Errorf("unsupported aggregation type %q", config.Type)
 	}
@@ -245,4 +249,89 @@ func aggregateForSumMetric(ctx context.Context, metrics metricdata.Metrics, conf
 	}
 	metrics.Data = data
 	return metrics, nil
+}
+
+func aggregateForHistogramMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
+	if metrics.Data == nil {
+		temporality := metricdata.DeltaTemporality
+		if config.IsCumulative {
+			temporality = metricdata.CumulativeTemporality
+		}
+		metrics.Data = metricdata.Histogram[float64]{
+			DataPoints:  make([]metricdata.HistogramDataPoint[float64], 0),
+			Temporality: temporality,
+		}
+	}
+	data, ok := metrics.Data.(metricdata.Histogram[float64])
+	if !ok {
+		return metrics, oops.Errorf("unsupported data type for histogram")
+	}
+	startTime, t, attrSet, err := getAggregateAxis(ctx, config, vars)
+	if err != nil {
+		return metrics, oops.Wrapf(err, "failed to get aggregate axis")
+	}
+	value, err := config.Value.Eval(ctx, vars)
+	if err != nil {
+		return metrics, oops.Wrapf(err, "failed to evaluate value")
+	}
+	var targetDPIndex int
+	var found bool
+	for i, dp := range data.DataPoints {
+		if !dp.Time.Equal(t) {
+			continue
+		}
+		if !dp.Attributes.Equals(&attrSet) {
+			continue
+		}
+		targetDPIndex = i
+		found = true
+		break
+	}
+	if !found {
+		dp := metricdata.HistogramDataPoint[float64]{
+			StartTime:  startTime,
+			Time:       t,
+			Count:      0,
+			Sum:        0,
+			Attributes: attrSet,
+		}
+		if config.Boundaries != nil {
+			dp.Bounds = make([]float64, len(config.Boundaries))
+			copy(dp.Bounds, config.Boundaries)
+			dp.BucketCounts = make([]uint64, len(config.Boundaries)+1)
+		}
+		data.DataPoints = append(data.DataPoints, dp)
+		targetDPIndex = len(data.DataPoints) - 1
+	}
+	data.DataPoints[targetDPIndex] = AppendValueToHistogramDataPoint(value, data.DataPoints[targetDPIndex], config.NoMinMax)
+	metrics.Data = data
+	return metrics, nil
+}
+
+func AppendValueToHistogramDataPoint[N int64 | float64](value N, dp metricdata.HistogramDataPoint[N], noMinMax bool) metricdata.HistogramDataPoint[N] {
+	dp.Count++
+	dp.Sum += value
+	if !noMinMax {
+		if cmin, defined := dp.Min.Value(); !defined || value < cmin {
+			dp.Min = metricdata.NewExtrema(value)
+		}
+		if cmax, defined := dp.Max.Value(); !defined || value > cmax {
+			dp.Max = metricdata.NewExtrema(value)
+		}
+	}
+	if dp.Bounds == nil {
+		return dp
+	}
+	// for example: bounds=[0, 5, 10, 15]
+	// bucketCounts means (-inf, 0], (0, 5], (5, 10], (10, 15], (15, +inf)
+	// so, the value 0 is in the second bucket, the value 5 is in the third bucket
+	v := float64(value)
+	for i, b := range dp.Bounds {
+		if v < b {
+			dp.BucketCounts[i]++
+			return dp
+		}
+	}
+	dp.BucketCounts[len(dp.Bounds)]++
+	return dp
 }

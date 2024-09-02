@@ -43,6 +43,8 @@ type MetricsConfig struct {
 	Value        *CELCapable[float64] `json:"value,omitempty"`
 	IsMonotonic  bool                 `json:"is_monotonic,omitempty"`
 	IsCumulative bool                 `json:"is_cumulative,omitempty"`
+	Boundaries   []float64            `json:"boundaries,omitempty"`
+	NoMinMax     bool                 `json:"no_min_max,omitempty"`
 }
 
 func DefaultConfig() *Config {
@@ -70,6 +72,7 @@ func (c *Config) Validate() error {
 		if err := a.Validate(); err != nil {
 			return oops.Wrapf(err, "resource_attributes[%d]", i)
 		}
+		c.ResourceAttributes[i] = a
 	}
 	if err := c.Scope.Validate(); err != nil {
 		return oops.Wrapf(err, "scope")
@@ -78,6 +81,7 @@ func (c *Config) Validate() error {
 		if err := m.Validate(); err != nil {
 			return oops.Wrapf(err, "metrics[%d]", i)
 		}
+		c.Metrics[i] = m
 	}
 	return nil
 }
@@ -104,8 +108,34 @@ func (c *MetricsConfig) Validate() error {
 		if c.Value == nil {
 			return oops.Errorf("value is required for metric type \"Sum\"")
 		}
+	case AggregationTypeHistogram:
+		return c.validateForHistogram()
 	default:
 		return oops.Errorf("unsupported metric type: %s", c.Type)
+	}
+	return nil
+}
+
+var DefaultHistogramBoundaries = []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000}
+
+func (c *MetricsConfig) validateForHistogram() error {
+	if c.Value == nil {
+		return oops.Errorf("value is required for metric type \"Histogram\"")
+	}
+	if c.Boundaries == nil {
+		c.Boundaries = make([]float64, len(DefaultHistogramBoundaries))
+		copy(c.Boundaries, DefaultHistogramBoundaries)
+	}
+	if len(c.Boundaries) <= 1 {
+		return nil
+	}
+	// check boundaries are monotonic.
+	current := c.Boundaries[0]
+	for i, b := range c.Boundaries[1:] {
+		if b <= current {
+			return oops.Errorf("boundaries[%d] must be greater than boundaries[%d]", i+1, i)
+		}
+		current = b
 	}
 	return nil
 }
