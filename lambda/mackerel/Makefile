@@ -39,6 +39,6 @@ terraform/apply:
 	terraform apply
 	$(MAKE) clean
 
-.PHONY: terraform/destory
+.PHONY: terraform/destroy
 terraform/destroy:
 	terraform destroy
