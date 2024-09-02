@@ -408,6 +408,12 @@ Boundaries defaults `[0, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7
 If set boundaries `[0.0, 0.5, 1.0, 2.5, 5.0]` means histogram buckets are `(-inf, 0.0], (0.0, 0.5], (0.5, 1.0], (1.0, 2.5], (2.5, 5.0], (5.0, +inf)`.
 If `no_min_max` is true, the not  calculate the histogram of the minimum and maximum values.
 
+### Example of Mackerel Labeled Metrics
+
+see [lambda/mackerel](./lambda/mackerel) dir for more details.
+
+include terraform code and [lambroll](https://github.com/fujiwara/lambroll) configuration.
+
 ## License
 
 This project is licensed under the MIT License. 
