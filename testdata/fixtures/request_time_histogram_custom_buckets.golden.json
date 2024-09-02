@@ -1,0 +1,91 @@
+{
+  "Resource": [
+    {
+      "Key": "aws.cloudfront.distribution_id",
+      "Value": {
+        "Type": "STRING",
+        "Value": "EMLARXS9EXAMPLE"
+      }
+    },
+    {
+      "Key": "service.name",
+      "Value": {
+        "Type": "STRING",
+        "Value": "Amazon CloudFront"
+      }
+    }
+  ],
+  "ScopeMetrics": [
+    {
+      "Scope": {
+        "Name": "test",
+        "Version": "",
+        "SchemaURL": ""
+      },
+      "Metrics": [
+        {
+          "Name": "http.server.request_time",
+          "Description": "The request time of HTTP requests",
+          "Unit": "ms",
+          "Data": {
+            "DataPoints": [
+              {
+                "Attributes": [],
+                "StartTime": "2019-12-04T21:00:00Z",
+                "Time": "2019-12-04T21:05:00Z",
+                "Count": 3,
+                "Bounds": [
+                  0,
+                  2,
+                  4,
+                  6,
+                  8,
+                  10
+                ],
+                "BucketCounts": [
+                  0,
+                  3,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "Min": 0,
+                "Max": 1,
+                "Sum": 2
+              },
+              {
+                "Attributes": [],
+                "StartTime": "2019-12-13T22:35:00Z",
+                "Time": "2019-12-13T22:40:00Z",
+                "Count": 3,
+                "Bounds": [
+                  0,
+                  2,
+                  4,
+                  6,
+                  8,
+                  10
+                ],
+                "BucketCounts": [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  0,
+                  3
+                ],
+                "Min": 102,
+                "Max": 107,
+                "Sum": 312
+              }
+            ],
+            "Temporality": "CumulativeTemporality"
+          }
+        }
+      ]
+    }
+  ]
+}

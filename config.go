@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/url"
+	"time"
 
 	"github.com/samber/oops"
 )
@@ -34,17 +35,19 @@ type ScopeConfig struct {
 }
 
 type MetricsConfig struct {
-	Name         string               `json:"name,omitempty"`
-	Description  string               `json:"description,omitempty"`
-	Unit         string               `json:"unit,omitempty"`
-	Type         AggregationType      `json:"type,omitempty"`
-	Attributes   []AttributeConfig    `json:"attributes,omitempty"`
-	Filter       *CELCapable[bool]    `json:"filter,omitempty"`
-	Value        *CELCapable[float64] `json:"value,omitempty"`
-	IsMonotonic  bool                 `json:"is_monotonic,omitempty"`
-	IsCumulative bool                 `json:"is_cumulative,omitempty"`
-	Boundaries   []float64            `json:"boundaries,omitempty"`
-	NoMinMax     bool                 `json:"no_min_max,omitempty"`
+	Name              string               `json:"name,omitempty"`
+	Description       string               `json:"description,omitempty"`
+	Interval          string               `json:"interval,omitempty"`
+	Unit              string               `json:"unit,omitempty"`
+	Type              AggregationType      `json:"type,omitempty"`
+	Attributes        []AttributeConfig    `json:"attributes,omitempty"`
+	Filter            *CELCapable[bool]    `json:"filter,omitempty"`
+	Value             *CELCapable[float64] `json:"value,omitempty"`
+	IsMonotonic       bool                 `json:"is_monotonic,omitempty"`
+	IsCumulative      bool                 `json:"is_cumulative,omitempty"`
+	Boundaries        []float64            `json:"boundaries,omitempty"`
+	NoMinMax          bool                 `json:"no_min_max,omitempty"`
+	aggregateInterval time.Duration        `json:"-"`
 }
 
 func DefaultConfig() *Config {
@@ -90,6 +93,10 @@ func (c *ScopeConfig) Validate() error {
 	return nil
 }
 
+func (c *MetricsConfig) AggregateInterval() time.Duration {
+	return c.aggregateInterval
+}
+
 func (c *MetricsConfig) Validate() error {
 	if c.Name == "" {
 		return oops.Errorf("name is required")
@@ -99,6 +106,17 @@ func (c *MetricsConfig) Validate() error {
 			return oops.Wrapf(err, "attributes[%d]", i)
 		}
 	}
+	if c.Interval == "" {
+		c.Interval = "1m"
+	}
+	d, err := time.ParseDuration(c.Interval)
+	if err != nil {
+		return oops.Wrapf(err, "invalid interval")
+	}
+	if d < 1*time.Millisecond {
+		return oops.Errorf("interval must be greater than or equal to 1ms")
+	}
+	c.aggregateInterval = d
 	switch c.Type {
 	case AggregationTypeCount:
 		if c.Value != nil {
