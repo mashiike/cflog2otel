@@ -2,9 +2,11 @@ package cflog2otel
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"iter"
 	"log/slog"
 	"path/filepath"
@@ -284,11 +286,24 @@ func (app *App) generateMetrics(ctx context.Context, notification events.S3Event
 		return nil, oops.Wrapf(err, "failed to download object")
 	}
 	slog.InfoContext(ctx, "downloaded object", "size", n)
-	resourceMetrics, err := Aggregate(ctx, app.cfg, notification, bytes.NewReader(buffer.Bytes()))
+	data := buffer.Bytes()
+	var reader io.Reader
+	reader = bytes.NewReader(data)
+	if IsGzipped(data) {
+		reader, err = gzip.NewReader(reader)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to create gzip reader")
+		}
+	}
+	resourceMetrics, err := Aggregate(ctx, app.cfg, notification, reader)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to aggregate metrics")
 	}
 	return resourceMetrics, nil
+}
+
+func IsGzipped(data []byte) bool {
+	return len(data) > 2 && data[0] == 0x1f && data[1] == 0x8b
 }
 
 func ToAttributes(ctx context.Context, cfgs []AttributeConfig, celVariables *CELVariables) ([]attribute.KeyValue, error) {
