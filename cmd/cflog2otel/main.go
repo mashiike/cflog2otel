@@ -30,11 +30,13 @@ func _main(ctx context.Context) error {
 		logPrettify        bool
 		configPath         string
 		configValidateOnly bool
+		renderConfig       bool
 	)
 	flag.StringVar(&logLevel, "log-level", "info", "log level")
 	flag.BoolVar(&logPrettify, "log-prettify", false, "log prettify")
-	flag.StringVar(&configPath, "config", "", "config file path")
+	flag.StringVar(&configPath, "config", "cflog2otel.jsonnet", "config file path")
 	flag.BoolVar(&configValidateOnly, "config-validate-only", false, "validate config only")
+	flag.BoolVar(&renderConfig, "render-config", false, "render config only")
 	flag.VisitAll(flagx.EnvToFlag)
 	flag.Parse()
 
@@ -44,6 +46,14 @@ func _main(ctx context.Context) error {
 		return oops.Wrapf(err, "failed to load config")
 	}
 	if configValidateOnly {
+		return nil
+	}
+	if renderConfig {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(cfg); err != nil {
+			return oops.Wrapf(err, "failed to render config")
+		}
 		return nil
 	}
 	app, err := cflog2otel.New(ctx, cfg)
