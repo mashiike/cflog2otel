@@ -47,7 +47,7 @@
                   }
                 ],
                 "StartTime": "2019-12-04T21:02:00Z",
-                "Time": "0001-01-01T00:00:00Z",
+                "Time": "2019-12-04T21:03:00Z",
                 "Value": 3
               },
               {
@@ -68,7 +68,7 @@
                   }
                 ],
                 "StartTime": "2019-12-13T22:36:00Z",
-                "Time": "0001-01-01T00:00:00Z",
+                "Time": "2019-12-13T22:37:00Z",
                 "Value": 1
               },
               {
@@ -89,7 +89,7 @@
                   }
                 ],
                 "StartTime": "2019-12-13T22:36:00Z",
-                "Time": "0001-01-01T00:00:00Z",
+                "Time": "2019-12-13T22:37:00Z",
                 "Value": 1
               },
               {
@@ -110,11 +110,11 @@
                   }
                 ],
                 "StartTime": "2019-12-13T22:37:00Z",
-                "Time": "0001-01-01T00:00:00Z",
+                "Time": "2019-12-13T22:38:00Z",
                 "Value": 1
               }
             ],
-            "Temporality": "CumulativeTemporality",
+            "Temporality": "DeltaTemporality",
             "IsMonotonic": true
           }
         }
