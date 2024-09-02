@@ -309,6 +309,105 @@ aggregation type is one of the following:
 - `Sum`: Sum the value of the specified field in the log lines that match the filter.
 - `Histogram`: Calculate the histogram of the specified field in the log lines that match the filter.
 
+##### Example of `Count` Aggregation
+
+Count rows that match the filter.
+
+```jsonnet
+local cel = std.native('cel');
+
+{
+  otel: {
+    endpoint: 'http://localhost:4317/',
+    gzip: true,
+  },
+  metrics: [
+    {
+      name: 'http.server.requests',
+      description: 'The number of HTTP requests',
+      type: 'Count',
+      attributes: [
+        {
+          key: 'http.status_code',
+          value: cel('log.scStatusCategory'),
+        },
+      ],
+    },
+  ],
+}
+```
+
+required fields are `name`and `type`.
+optional fields are `description`, `attributes`, `filter` and `unit`.
+Metric Temporality defaults `Delta`, if `is_cumulative` is true, it will be `Cumulative`.
+
+##### Example of `Sum` Aggregation
+
+Sum values of the specified field in the log lines that match the filter.
+
+```jsonnet
+local cel = std.native('cel');
+
+{
+  otel: {
+    endpoint: 'http://localhost:4317/',
+    gzip: true,
+  },
+  metrics: [
+    {
+      name: 'http.server.total_bytes',
+      description: 'The total number of bytes sent by the server',
+      type: 'Sum',
+      unit: 'Byte',
+      attributes: [
+        {
+          key: 'http.status_code',
+          value: cel('log.scStatusCategory'),
+        },
+      ],
+      value: cel('double(log.scBytes)'),
+      is_monotonic: true,
+    },
+  ],
+}
+```
+
+required fields are `name`, `type` and `value`.
+optional fields are `description`, `attributes`, `filter`, `unit` and `is_monotonic`.
+Metric Temporality defaults `Delta`, if `is_cumulative` is true, it will be `Cumulative`.
+Metric default `Non-Monotonic`, if `is_monotonic` is true, it will be `Monotonic`.
+
+##### Example of `Histogram` Aggregation
+
+Calculate the histogram of the specified field in the log lines that match the filter.
+
+```jsonnet
+local cel = std.native('cel');
+
+{
+  otel: {
+    endpoint: 'http://localhost:4317/',
+    gzip: true,
+  },
+  metrics: [
+    {
+      name: 'http.server.request_time',
+      description: 'The request time of HTTP requests',
+      type: 'Histogram',
+      unit: 'ms',
+      value: cel('log.timeTaken * 1000.0'),
+    },
+  ],
+}
+```
+
+required fields are `name`, `type` and `value`.
+optional fields are `description`, `attributes`, `filter`, `unit`, `boundaries`, and `no_min_max`.
+Metric Temporality defaults `Delta`, if `is_cumulative` is true, it will be `Cumulative`.
+Boundaries defaults `[0, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]`, if `boundaries` is specified, it will be used.
+If set boundaries `[0.0, 0.5, 1.0, 2.5, 5.0]` means histogram buckets are `(-inf, 0.0], (0.0, 0.5], (0.5, 1.0], (1.0, 2.5], (2.5, 5.0], (5.0, +inf)`.
+If `no_min_max` is true, the not  calculate the histogram of the minimum and maximum values.
+
 ## License
 
 This project is licensed under the MIT License. 
