@@ -14,6 +14,7 @@ var testConfigs = []string{
 	`testdata/switch_case.jsonnet`,
 	`testdata/multi_metrics.jsonnet`,
 	`testdata/request_time_histogram.jsonnet`,
+	`testdata/request_time_histogram_custom_buckets.jsonnet`,
 }
 
 func TestConfigLoad__Success(t *testing.T) {

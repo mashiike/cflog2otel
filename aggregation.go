@@ -149,13 +149,13 @@ func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config Met
 }
 
 func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariables) (time.Time, time.Time, attribute.Set, error) {
-	t := vars.Log.Timestamp.Truncate(time.Minute)
+	t := vars.Log.Timestamp.Truncate(config.AggregateInterval())
 	attrs, err := ToAttributes(ctx, config.Attributes, vars)
 	if err != nil {
 		return time.Time{}, time.Time{}, attribute.Set{}, oops.Wrapf(err, "failed to convert attributes")
 	}
 	attrSet := attribute.NewSet(attrs...)
-	return t, t.Add(time.Minute), attrSet, nil
+	return t, t.Add(config.AggregateInterval()), attrSet, nil
 }
 
 func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
