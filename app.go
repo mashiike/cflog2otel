@@ -272,25 +272,35 @@ func (w *WriteAtBuffer) Bytes() []byte {
 }
 
 func (app *App) generateMetrics(ctx context.Context, notification events.S3EventRecord) ([]*metricdata.ResourceMetrics, error) {
-	distributionID, datehour, uniqueID, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
-	if err != nil {
-		return nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
-	}
+
 	ctx = slogutils.With(ctx,
 		"bucket_name", notification.S3.Bucket.Name,
 		"object_key", notification.S3.Object.Key,
-		"distribution_id", distributionID,
-		"datehour", datehour,
-		"unique_id", uniqueID,
 	)
 	slog.InfoContext(ctx, "starting metrics generation")
+	celVariables, logs, err := app.GetVariablesAndLogs(ctx, notification)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to get variables and logs")
+	}
+	resourceMetrics, err := Aggregate(ctx, app.cfg, celVariables, logs)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to aggregate metrics")
+	}
+	return resourceMetrics, nil
+}
+
+func (app *App) GetVariablesAndLogs(ctx context.Context, notification events.S3EventRecord) (*CELVariables, []CELVariablesLog, error) {
+	distributionID, _, _, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
+	}
 	buffer := NewWriteAtBuffer()
 	n, err := app.downloader.Download(ctx, buffer, &s3.GetObjectInput{
 		Bucket: &notification.S3.Bucket.Name,
 		Key:    &notification.S3.Object.Key,
 	})
 	if err != nil {
-		return nil, oops.Wrapf(err, "failed to download object")
+		return nil, nil, oops.Wrapf(err, "failed to download object")
 	}
 	slog.InfoContext(ctx, "downloaded object", "size", n)
 	data := buffer.Bytes()
@@ -299,19 +309,15 @@ func (app *App) generateMetrics(ctx context.Context, notification events.S3Event
 	if IsGzipped(data) {
 		reader, err = gzip.NewReader(reader)
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create gzip reader")
+			return nil, nil, oops.Wrapf(err, "failed to create gzip reader")
 		}
 	}
 	logs, err := ParseCloudFrontLog(ctx, reader)
 	if err != nil {
-		return nil, oops.Wrapf(err, "failed to parse cloudfront log")
+		return nil, nil, oops.Wrapf(err, "failed to parse cloudfront log")
 	}
 	celVariables := NewCELVariables(notification, distributionID)
-	resourceMetrics, err := Aggregate(ctx, app.cfg, celVariables, logs)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to aggregate metrics")
-	}
-	return resourceMetrics, nil
+	return celVariables, logs, nil
 }
 
 func IsGzipped(data []byte) bool {
