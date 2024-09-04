@@ -18,6 +18,7 @@ type Config struct {
 	Scope              ScopeConfig       `json:"scope,omitempty"`
 	Metrics            []MetricsConfig   `json:"metrics,omitempty"`
 	Backfill           BackfillConfig    `json:"backfill,omitempty"`
+	NoSkip             bool              `json:"no_skip,omitempty"`
 }
 
 type OtelConfig struct {
