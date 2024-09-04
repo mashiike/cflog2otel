@@ -291,6 +291,10 @@ func (app *App) generateMetrics(ctx context.Context, notification events.S3Event
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to get variables and logs")
 	}
+	if len(logs) == 0 {
+		slog.InfoContext(ctx, "no logs to process")
+		return []*metricdata.ResourceMetrics{}, nil
+	}
 	resourceMetrics, err := Aggregate(ctx, app.cfg, celVariables, logs)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to aggregate metrics")
@@ -301,7 +305,11 @@ func (app *App) generateMetrics(ctx context.Context, notification events.S3Event
 func (app *App) GetVariablesAndLogs(ctx context.Context, notification events.S3EventRecord) (*CELVariables, []CELVariablesLog, error) {
 	prefix, distributionID, datehour, _, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
 	if err != nil {
-		return nil, nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
+		if app.cfg.NoSkip {
+			return nil, nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
+		}
+		slog.WarnContext(ctx, "skipping object", "reason", err.Error())
+		return nil, []CELVariablesLog{}, nil
 	}
 	reader, err := NewS3ObjectReader(ctx, app.downloader, notification.S3.Bucket.Name, notification.S3.Object.Key)
 	if err != nil {
