@@ -236,6 +236,29 @@ local ssm = std.native('ssm');
 }
 ```
 
+### Backfill Export
+
+If your Metrics Backend uses Delta Temporality but can handle updates for the same timestamp and attributes, use this option.
+Enable backfill for reading logs to include complete aggregation, including past logs.
+
+This configuration will behave as follows: When an event is triggered for an object like `example-prefix/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz`,
+it will execute ListObjects for `logs/EMLARXS9EXAMPLE.2019-11-14-20*`. If the LastModifiedAt of the logs is within the specified time_tolerance period from the trigger time, those logs will also be used for metrics aggregation.
+
+```jsonnet
+{
+  otel: {
+    endpoint: 'http://localhost:4317/',
+    gzip: true,
+  },
+  backfill: {
+    enabled: true,
+    time_tolerance: '1h',
+  },
+  // ...
+}
+```
+
+
 ### OpenTelemetry Metrics Aggregation Settings
 
 The `resource_attributes`, `scope`, and `metrics` fields are used to configure how metrics are aggregated and exported to an OpenTelemetry provider.
