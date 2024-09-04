@@ -2,12 +2,9 @@ package cflog2otel
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"time"
 
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/mashiike/slogutils"
 	"github.com/samber/oops"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
@@ -15,23 +12,10 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
-func Aggregate(ctx context.Context, cfg *Config, notification events.S3EventRecord, reader io.Reader) ([]*metricdata.ResourceMetrics, error) {
-	distributionID, datehour, uniqueID, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
-	if err != nil {
-		return nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
-	}
-	ctx = slogutils.With(ctx,
-		"distribution_id", distributionID,
-		"datehour", datehour,
-		"unique_id", uniqueID,
-	)
-	logs, err := ParseCloudFrontLog(ctx, reader)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to parse cloudfront log")
-	}
+func Aggregate(ctx context.Context, cfg *Config, celVariables *CELVariables, logs []CELVariablesLog) ([]*metricdata.ResourceMetrics, error) {
 	resourceMetrics := make([]*metricdata.ResourceMetrics, 0)
 	for _, l := range logs {
-		celVariables := NewCELVariables(notification, distributionID, l)
+		celVariables.SetLogLine(l)
 		attrs, err := ToAttributes(ctx, cfg.ResourceAttributes, celVariables)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to convert attributes")

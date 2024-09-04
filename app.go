@@ -272,9 +272,16 @@ func (w *WriteAtBuffer) Bytes() []byte {
 }
 
 func (app *App) generateMetrics(ctx context.Context, notification events.S3EventRecord) ([]*metricdata.ResourceMetrics, error) {
+	distributionID, datehour, uniqueID, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
+	if err != nil {
+		return nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
+	}
 	ctx = slogutils.With(ctx,
 		"bucket_name", notification.S3.Bucket.Name,
 		"object_key", notification.S3.Object.Key,
+		"distribution_id", distributionID,
+		"datehour", datehour,
+		"unique_id", uniqueID,
 	)
 	slog.InfoContext(ctx, "starting metrics generation")
 	buffer := NewWriteAtBuffer()
@@ -295,7 +302,12 @@ func (app *App) generateMetrics(ctx context.Context, notification events.S3Event
 			return nil, oops.Wrapf(err, "failed to create gzip reader")
 		}
 	}
-	resourceMetrics, err := Aggregate(ctx, app.cfg, notification, reader)
+	logs, err := ParseCloudFrontLog(ctx, reader)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to parse cloudfront log")
+	}
+	celVariables := NewCELVariables(notification, distributionID)
+	resourceMetrics, err := Aggregate(ctx, app.cfg, celVariables, logs)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to aggregate metrics")
 	}

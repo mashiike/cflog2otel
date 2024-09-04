@@ -44,7 +44,7 @@ type CELVariablesS3Object struct {
 	Sequencer string `json:"sequencer" cel:"sequencer"`
 }
 
-func NewCELVariables(record events.S3EventRecord, distributionID string, logLine CELVariablesLog) *CELVariables {
+func NewCELVariables(record events.S3EventRecord, distributionID string) *CELVariables {
 	return &CELVariables{
 		Bucket: CELVariablesS3Bucket{
 			Name: record.S3.Bucket.Name,
@@ -63,8 +63,11 @@ func NewCELVariables(record events.S3EventRecord, distributionID string, logLine
 		CloudFront: CELVariablesCloudFront{
 			DistributionID: distributionID,
 		},
-		Log: logLine,
 	}
+}
+
+func (v *CELVariables) SetLogLine(log CELVariablesLog) {
+	v.Log = log
 }
 
 func (v *CELVariables) MarshalMap() map[string]interface{} {
