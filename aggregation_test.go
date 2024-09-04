@@ -30,7 +30,7 @@ func TestAggreagation(t *testing.T) {
 			ctx := context.Background()
 			bs, err := os.ReadFile("testdata/cf_log.txt")
 			require.NoError(t, err)
-			metrics, err := cflog2otel.Aggregate(ctx, cfg, events.S3EventRecord{
+			vars := cflog2otel.NewCELVariables(events.S3EventRecord{
 				S3: events.S3Entity{
 					Bucket: events.S3Bucket{
 						Name: "example-bucket",
@@ -39,7 +39,10 @@ func TestAggreagation(t *testing.T) {
 						Key: "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz",
 					},
 				},
-			}, strings.NewReader(string(bs)))
+			}, "EMLARXS9EXAMPLE")
+			logs, err := cflog2otel.ParseCloudFrontLog(ctx, strings.NewReader(string(bs)))
+			require.NoError(t, err)
+			metrics, err := cflog2otel.Aggregate(ctx, cfg, vars, logs)
 			require.NoError(t, err)
 			require.Len(t, metrics, 1)
 			g.AssertJson(t, strings.TrimSuffix(filepath.Base(c), filepath.Ext(c)), metrics[0])

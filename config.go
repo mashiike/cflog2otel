@@ -2,8 +2,11 @@ package cflog2otel
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/samber/oops"
@@ -14,6 +17,7 @@ type Config struct {
 	ResourceAttributes []AttributeConfig `json:"resource_attributes,omitempty"`
 	Scope              ScopeConfig       `json:"scope,omitempty"`
 	Metrics            []MetricsConfig   `json:"metrics,omitempty"`
+	Backfill           BackfillConfig    `json:"backfill,omitempty"`
 }
 
 type OtelConfig struct {
@@ -21,6 +25,12 @@ type OtelConfig struct {
 	Endpoint string            `json:"endpoint,omitempty"`
 	GZip     bool              `json:"gzip,omitempty"`
 	endpoint *url.URL          `json:"-"`
+}
+
+type BackfillConfig struct {
+	Enabled       bool   `json:"enabled,omitempty"`
+	TimeTolerance string `json:"time_tolerance,omitempty"`
+	timeTolerance time.Duration
 }
 
 type AttributeConfig struct {
@@ -55,12 +65,17 @@ func DefaultConfig() *Config {
 }
 
 func (c *Config) Load(path string, opts ...JsonnetOption) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return oops.Wrapf(errors.Unwrap(err), "open %s", path)
+	}
 	vm := MakeVM(opts...)
 	jsonStr, err := vm.EvaluateFile(path)
 	if err != nil {
 		return oops.Errorf("failed to evaluate JSONnet file: %w", err)
 	}
-	err = json.Unmarshal([]byte(jsonStr), c)
+	dec := json.NewDecoder(strings.NewReader(jsonStr))
+	dec.DisallowUnknownFields()
+	err = dec.Decode(c)
 	if err != nil {
 		return oops.Errorf("failed to unmarshal JSON: %w", err)
 	}
@@ -76,6 +91,9 @@ func (c *Config) Validate() error {
 			return oops.Wrapf(err, "resource_attributes[%d]", i)
 		}
 		c.ResourceAttributes[i] = a
+	}
+	if err := c.Backfill.Validate(); err != nil {
+		return oops.Wrapf(err, "backfill")
 	}
 	if err := c.Scope.Validate(); err != nil {
 		return oops.Wrapf(err, "scope")
@@ -195,4 +213,20 @@ func (c *OtelConfig) Validate() error {
 		return err
 	}
 	return nil
+}
+
+func (c *BackfillConfig) Validate() error {
+	if c.TimeTolerance == "" {
+		c.TimeTolerance = "1h"
+	}
+	d, err := time.ParseDuration(c.TimeTolerance)
+	if err != nil {
+		return oops.Wrapf(err, "time_tolerance")
+	}
+	c.timeTolerance = d
+	return nil
+}
+
+func (c *BackfillConfig) TimeToleranceDuration() time.Duration {
+	return c.timeTolerance
 }
