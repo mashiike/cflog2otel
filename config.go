@@ -2,8 +2,11 @@ package cflog2otel
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/url"
+	"os"
+	"strings"
 
 	"github.com/samber/oops"
 )
@@ -52,12 +55,17 @@ func DefaultConfig() *Config {
 }
 
 func (c *Config) Load(path string, opts ...JsonnetOption) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return oops.Wrapf(errors.Unwrap(err), "open %s", path)
+	}
 	vm := MakeVM(opts...)
 	jsonStr, err := vm.EvaluateFile(path)
 	if err != nil {
 		return oops.Errorf("failed to evaluate JSONnet file: %w", err)
 	}
-	err = json.Unmarshal([]byte(jsonStr), c)
+	dec := json.NewDecoder(strings.NewReader(jsonStr))
+	dec.DisallowUnknownFields()
+	err = dec.Decode(c)
 	if err != nil {
 		return oops.Errorf("failed to unmarshal JSON: %w", err)
 	}
