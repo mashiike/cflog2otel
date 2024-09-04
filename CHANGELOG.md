@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.2.0](https://github.com/mashiike/cflog2otel/compare/v0.1.0...v0.2.0) - 2024-09-04
+- Backfill Export by @mashiike in https://github.com/mashiike/cflog2otel/pull/11
+- No Error, When Not CloudFront Standard Logs by @mashiike in https://github.com/mashiike/cflog2otel/pull/13
+
 ## [v0.1.0](https://github.com/mashiike/cflog2otel/commits/v0.1.0) - 2024-09-02
 - Bump github.com/fatih/color from 1.15.0 to 1.17.0 by @dependabot in https://github.com/mashiike/cflog2otel/pull/2
 - Bump github.com/aws/aws-lambda-go from 1.45.0 to 1.47.0 by @dependabot in https://github.com/mashiike/cflog2otel/pull/3
