@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/mashiike/cflog2otel"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -24,28 +24,41 @@ func (m *mockControler) Finish() {
 	mock.AssertExpectationsForObjects(m.tb, m.objects...)
 }
 
-type mockDownloadAPIClient struct {
+type mockS3APIClient struct {
 	mock.Mock
 	tb testing.TB
 }
 
-func newMockDownloadAPIClient(ctrl *mockControler) *mockDownloadAPIClient {
-	m := &mockDownloadAPIClient{
+func newMockS3APIClient(ctrl *mockControler) *mockS3APIClient {
+	m := &mockS3APIClient{
 		tb: ctrl.tb,
 	}
 	ctrl.objects = append(ctrl.objects, m)
 	return m
 }
 
-var _ manager.DownloadAPIClient = (*mockDownloadAPIClient)(nil)
+var _ cflog2otel.S3APIClient = (*mockS3APIClient)(nil)
 
-func (m *mockDownloadAPIClient) GetObject(ctx context.Context, input *s3.GetObjectInput, opts ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+func (m *mockS3APIClient) GetObject(ctx context.Context, input *s3.GetObjectInput, opts ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	ret := m.Called(ctx, input)
 	output := ret.Get(0)
 	if output == nil {
 		return nil, ret.Error(1)
 	}
 	if o, ok := output.(*s3.GetObjectOutput); ok {
+		return o, ret.Error(1)
+	}
+	m.tb.Errorf("unexpected type %T", output)
+	return nil, ret.Error(1)
+}
+
+func (m *mockS3APIClient) ListObjectsV2(ctx context.Context, input *s3.ListObjectsV2Input, opts ...func(*s3.Options)) (*s3.ListObjectsV2Output, error) {
+	ret := m.Called(ctx, input)
+	output := ret.Get(0)
+	if output == nil {
+		return nil, ret.Error(1)
+	}
+	if o, ok := output.(*s3.ListObjectsV2Output); ok {
 		return o, ret.Error(1)
 	}
 	m.tb.Errorf("unexpected type %T", output)

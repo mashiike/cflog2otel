@@ -17,15 +17,20 @@ local cel = std.native('cel');
   ],
   backfill: {
     enabled: true,
-    time_tolerance: '10m',
+    time_tolerance: '15m',
   },
   metrics: [
     {
-      name: 'http.server.request_time',
-      description: 'The request time of HTTP requests',
-      type: 'Histogram',
+      name: 'http.server.http_requests',
+      description: 'The request count of HTTP requests',
+      type: 'Count',
       unit: 'ms',
-      value: cel('log.timeTaken * 1000.0'),
+      attributes: [
+        {
+          key: 'http.status_code',
+          value: cel('log.scStatusCategory'),
+        },
+      ],
     },
   ],
 }

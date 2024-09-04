@@ -1,0 +1,114 @@
+{
+  "resource_metrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "aws.cloudfront.distribution_id",
+            "value": {
+              "Value": {
+                "StringValue": "EMLARXS9EXAMPLE"
+              }
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "Value": {
+                "StringValue": "Amazon CloudFront"
+              }
+            }
+          }
+        ]
+      },
+      "scope_metrics": [
+        {
+          "scope": {},
+          "metrics": [
+            {
+              "name": "http.server.http_requests",
+              "description": "The request count of HTTP requests",
+              "unit": "ms",
+              "Data": {
+                "Sum": {
+                  "data_points": [
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "2xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1575493320000000000,
+                      "time_unix_nano": 1575493380000000000,
+                      "Value": {
+                        "AsInt": 3
+                      }
+                    },
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "4xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1575493320000000000,
+                      "time_unix_nano": 1575493380000000000,
+                      "Value": {
+                        "AsInt": 3
+                      }
+                    },
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "5xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1576276560000000000,
+                      "time_unix_nano": 1576276620000000000,
+                      "Value": {
+                        "AsInt": 2
+                      }
+                    },
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "5xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1576276620000000000,
+                      "time_unix_nano": 1576276680000000000,
+                      "Value": {
+                        "AsInt": 1
+                      }
+                    }
+                  ],
+                  "aggregation_temporality": 1,
+                  "is_monotonic": true
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

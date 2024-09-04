@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"iter"
 	"log/slog"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambdacontext"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -27,6 +29,7 @@ import (
 
 type App struct {
 	cfg        *Config
+	client     S3APIClient
 	downloader *manager.Downloader
 }
 
@@ -39,9 +42,15 @@ func New(ctx context.Context, cfg *Config) (*App, error) {
 	return NewWithClient(cfg, client)
 }
 
-func NewWithClient(cfg *Config, client manager.DownloadAPIClient) (*App, error) {
+type S3APIClient interface {
+	manager.DownloadAPIClient
+	s3.ListObjectsV2APIClient
+}
+
+func NewWithClient(cfg *Config, client S3APIClient) (*App, error) {
 	return &App{
 		cfg:        cfg,
+		client:     client,
 		downloader: manager.NewDownloader(client),
 	}, nil
 }
@@ -290,17 +299,65 @@ func (app *App) generateMetrics(ctx context.Context, notification events.S3Event
 }
 
 func (app *App) GetVariablesAndLogs(ctx context.Context, notification events.S3EventRecord) (*CELVariables, []CELVariablesLog, error) {
-	distributionID, _, _, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
+	prefix, distributionID, datehour, _, err := ParseCFStandardLogObjectKey(notification.S3.Object.Key)
 	if err != nil {
 		return nil, nil, oops.Wrapf(err, "parse object key[%s]", notification.S3.Object.Key)
 	}
+	reader, err := NewS3ObjectReader(ctx, app.downloader, notification.S3.Bucket.Name, notification.S3.Object.Key)
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "failed to create object reader")
+	}
+	logs, err := ParseCloudFrontLog(ctx, reader)
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "failed to parse cloudfront log")
+	}
+	if app.cfg.Backfill.Enabled {
+		eventTime := notification.EventTime
+		p := s3.NewListObjectsV2Paginator(app.client, &s3.ListObjectsV2Input{
+			Bucket: &notification.S3.Bucket.Name,
+			Prefix: aws.String(fmt.Sprintf("%s%s.%s.", prefix, distributionID, datehour)),
+		})
+		timeTolerance := app.cfg.Backfill.TimeToleranceDuration()
+		for p.HasMorePages() {
+			out, err := p.NextPage(ctx)
+			if err != nil {
+				return nil, nil, oops.Wrapf(err, "failed to list objects")
+			}
+			for _, obj := range out.Contents {
+				if *obj.Key == notification.S3.Object.Key {
+					continue
+				}
+				if d := eventTime.Sub(*obj.LastModified); d > timeTolerance {
+					slog.InfoContext(ctx, "skipping backfill object", "key", *obj.Key, "last_modified", *obj.LastModified, "time_tolerance", timeTolerance, "since", d)
+					continue
+				}
+				reader, err := NewS3ObjectReader(ctx, app.downloader, notification.S3.Bucket.Name, *obj.Key)
+				if err != nil {
+					return nil, nil, oops.Wrapf(err, "failed to create object reader")
+				}
+				currentLogs, err := ParseCloudFrontLog(ctx, reader)
+				if err != nil {
+					return nil, nil, oops.Wrapf(err, "failed to parse cloudfront log")
+				}
+				logs = append(logs, currentLogs...)
+			}
+		}
+		slices.SortStableFunc(logs, func(i, j CELVariablesLog) int {
+			return i.Timestamp.Compare(j.Timestamp)
+		})
+	}
+	celVariables := NewCELVariables(notification, distributionID)
+	return celVariables, logs, nil
+}
+
+func NewS3ObjectReader(ctx context.Context, downloader *manager.Downloader, bucket, key string) (io.Reader, error) {
 	buffer := NewWriteAtBuffer()
-	n, err := app.downloader.Download(ctx, buffer, &s3.GetObjectInput{
-		Bucket: &notification.S3.Bucket.Name,
-		Key:    &notification.S3.Object.Key,
+	n, err := downloader.Download(ctx, buffer, &s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
 	})
 	if err != nil {
-		return nil, nil, oops.Wrapf(err, "failed to download object")
+		return nil, oops.Wrapf(err, "failed to download object")
 	}
 	slog.InfoContext(ctx, "downloaded object", "size", n)
 	data := buffer.Bytes()
@@ -309,15 +366,10 @@ func (app *App) GetVariablesAndLogs(ctx context.Context, notification events.S3E
 	if IsGzipped(data) {
 		reader, err = gzip.NewReader(reader)
 		if err != nil {
-			return nil, nil, oops.Wrapf(err, "failed to create gzip reader")
+			return nil, oops.Wrapf(err, "failed to create gzip reader")
 		}
 	}
-	logs, err := ParseCloudFrontLog(ctx, reader)
-	if err != nil {
-		return nil, nil, oops.Wrapf(err, "failed to parse cloudfront log")
-	}
-	celVariables := NewCELVariables(notification, distributionID)
-	return celVariables, logs, nil
+	return reader, nil
 }
 
 func IsGzipped(data []byte) bool {
@@ -350,11 +402,20 @@ func ToAttributes(ctx context.Context, cfgs []AttributeConfig, celVariables *CEL
 	return attrs, nil
 }
 
-func ParseCFStandardLogObjectKey(str string) (string, string, string, error) {
+func ParseCFStandardLogObjectKey(str string) (string, string, string, string, error) {
+	if !strings.HasSuffix(str, ".gz") {
+		return "", "", "", "", errors.New("object key is not gzipped")
+	}
 	name := strings.TrimSuffix(filepath.Base(str), ".gz")
 	parts := strings.SplitN(name, ".", 3)
 	if len(parts) != 3 {
-		return "", "", "", errors.New("invalid object key")
+		return "", "", "", "", errors.New("invalid object key")
 	}
-	return parts[0], parts[1], parts[2], nil
+	prefix := strings.TrimPrefix(filepath.Dir(str), "/")
+	if prefix == "." {
+		prefix = ""
+	} else {
+		prefix = strings.TrimSuffix(prefix, "/") + "/"
+	}
+	return prefix, parts[0], parts[1], parts[2], nil
 }
