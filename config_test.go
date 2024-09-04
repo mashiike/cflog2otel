@@ -16,6 +16,7 @@ var testConfigs = []string{
 	`testdata/request_time_histogram.jsonnet`,
 	`testdata/request_count_for_5xx_is_cumlative.jsonnet`,
 	`testdata/backfil_config.jsonnet`,
+	`testdata/request_time_histogram_custom_buckets.jsonnet`,
 }
 
 func TestConfigLoad__Success(t *testing.T) {
