@@ -263,26 +263,26 @@ it will execute ListObjects for `logs/EMLARXS9EXAMPLE.2019-11-14-20*`. If the La
 
 The `resource_attributes`, `scope`, and `metrics` fields are used to configure how metrics are aggregated and exported to an OpenTelemetry provider.
 
-#### `cel` and `cel_switch` Jsonnet Native Functions
+#### `cel` and `switch` Jsonnet Native Functions
 
-The `cel` and `cel_switch` Jsonnet native functions allow you to define custom expressions for filtering and calculating metrics. These functions use [CEL (Common Expression Language)](https://cel.dev) to define logic based on the log data, enabling precise control over which metrics are collected and how they are calculated.
+The `cel` and `switch` Jsonnet native functions allow you to define custom expressions for filtering and calculating metrics. These functions use [CEL (Common Expression Language)](https://cel.dev) to define logic based on the log data, enabling precise control over which metrics are collected and how they are calculated.
 
 For example, `cel('log.scStatusCategory == "5xx"')` is a custom expression that filters logs based on the HTTP status code category.
 
-The `cel_switch` function is a syntax sugar for a switch-case statement in CEL. An example is shown below:
+The `switch` function is a syntax sugar for a switch-case statement in CEL. An example is shown below:
 
 ```jsonnet
-cel_switch([
+switch([
     {
-        case: 'log.scStatusCategory == "2xx"',
+        case: cel('log.scStatusCategory == "2xx"'),
         value: 'success',
     },
     {
-        case: 'log.scStatusCategory == "4xx"',
+        case: cel('log.scStatusCategory == "4xx"'),
         value: 'client_error',
     },
     {
-        case: 'log.scStatusCategory == "5xx"',
+        case: cel('log.scStatusCategory == "5xx"'),
         value: 'server_error',
     },
     {

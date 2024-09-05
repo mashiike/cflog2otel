@@ -1,5 +1,5 @@
 local cel = std.native('cel');
-local cel_switch = std.native('cel_switch');
+local switch = std.native('switch');
 
 {
   otel: {
@@ -27,13 +27,13 @@ local cel_switch = std.native('cel_switch');
       attributes: [
         {
           key: 'cloudfront.origin',
-          value: cel_switch([
+          value: switch([
             {
-              case: 'log.csUriStem.startsWith("/index.html")',
+              case: cel('log.csUriStem.startsWith("/index.html")'),
               value: 'S3',
             },
             {
-              case: 'log.csUriStem == "/favicon.ico"',
+              case: cel('log.csUriStem == "/favicon.ico"'),
               value: 'S3',
             },
             {
