@@ -1,11 +1,14 @@
 package cflog2otel
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -79,7 +82,7 @@ func (c *Config) Load(path string, opts ...JsonnetOption) error {
 	dec.DisallowUnknownFields()
 	err = dec.Decode(c)
 	if err != nil {
-		return oops.Errorf("failed to unmarshal JSON: %w", err)
+		return oops.Wrapf(err, "failed to unmarshal JSON")
 	}
 	return c.Validate()
 }
@@ -191,12 +194,80 @@ func (c *MetricsConfig) validateForHistogram() error {
 	return nil
 }
 
+func (c *MetricsConfig) UnmarshalJSON(data []byte) error {
+	type Alias MetricsConfig
+	aux := struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&aux); err != nil {
+		if cannotUseErr, ok := IsCannotUseCELNativeFunction(err, data, []string{"value", "filter"}); ok {
+			cannotUseErr.Field = "metrics[*]." + cannotUseErr.Field
+			return oops.Wrap(cannotUseErr)
+		}
+		return err
+	}
+	return nil
+}
+
+type CannotUseCELNativeFunctionError struct {
+	Field string
+}
+
+func (e *CannotUseCELNativeFunctionError) Error() string {
+	return fmt.Sprintf("cannot use CEL native function in %s", e.Field)
+}
+
+func IsCannotUseCELNativeFunction(err error, bs []byte, allowColumns []string) (*CannotUseCELNativeFunctionError, bool) {
+	if err == nil {
+		return nil, false
+	}
+	var e *json.UnmarshalTypeError
+	if !errors.As(err, &e) {
+		return nil, false
+	}
+	if slices.Contains(allowColumns, e.Field) {
+		return nil, false
+	}
+	var v map[string]interface{}
+	if err := json.Unmarshal(bs, &v); err != nil {
+		return nil, false
+	}
+	if _, ok := castCELExpr(v[e.Field]); !ok {
+		return nil, false
+	}
+	return &CannotUseCELNativeFunctionError{
+		Field: e.Field,
+	}, true
+}
+
 func (c *AttributeConfig) Validate() error {
 	if c.Key == "" {
 		return oops.Errorf("key is required")
 	}
 	if c.Value == nil {
 		return oops.Errorf("value is required")
+	}
+	return nil
+}
+
+func (c *AttributeConfig) UnmarshalJSON(data []byte) error {
+	type Alias AttributeConfig
+	aux := struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&aux); err != nil {
+		if cannotUseErr, ok := IsCannotUseCELNativeFunction(err, data, []string{"value"}); ok {
+			return oops.Wrap(cannotUseErr)
+		}
+		return err
 	}
 	return nil
 }
@@ -216,6 +287,24 @@ func (c *OtelConfig) SetEndpointURL(endpoint string) error {
 	return nil
 }
 
+func (c *OtelConfig) UnmarshalJSON(data []byte) error {
+	type Alias OtelConfig
+	aux := struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&aux); err != nil {
+		if cannotUseErr, ok := IsCannotUseCELNativeFunction(err, data, []string{}); ok {
+			return oops.Wrap(cannotUseErr)
+		}
+		return err
+	}
+	return nil
+}
+
 func (c *OtelConfig) EndpointURL() *url.URL {
 	return c.endpoint
 }
@@ -225,6 +314,24 @@ func (c *OtelConfig) Validate() error {
 		c.Endpoint = "http://localhost:4317"
 	}
 	if err := c.SetEndpointURL(c.Endpoint); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *BackfillConfig) UnmarshalJSON(data []byte) error {
+	type Alias BackfillConfig
+	aux := struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&aux); err != nil {
+		if cannotUseErr, ok := IsCannotUseCELNativeFunction(err, data, []string{}); ok {
+			return oops.Wrap(cannotUseErr)
+		}
 		return err
 	}
 	return nil

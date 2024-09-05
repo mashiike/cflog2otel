@@ -36,6 +36,7 @@ func TestConfigLoad__Failed(t *testing.T) {
 		{`testdata/invalid_syntax.jsonnet`, `Expected , or ; but got end of file`},
 		{`testdata/invalid_unknown_field.jsonnet`, `unknown field "fiter"`},
 		{`testdata/invalid_cel.jsonnet`, `undefined field 'csURIStem'`},
+		{`testdata/invalid_not_cel_capable.jsonnet`, `cannot use CEL native function in metrics[*].name`},
 	}
 	for _, c := range testFailedConfig {
 		t.Run(c[0], func(t *testing.T) {
