@@ -431,11 +431,67 @@ Boundaries defaults `[0, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7
 If set boundaries `[0.0, 0.5, 1.0, 2.5, 5.0]` means histogram buckets are `(-inf, 0.0], (0.0, 0.5], (0.5, 1.0], (1.0, 2.5], (2.5, 5.0], (5.0, +inf)`.
 If `no_min_max` is true, the not  calculate the histogram of the minimum and maximum values.
 
+### Emit Zero Configuration
+
+The `emit_zero` configuration is used to ensure that metrics are emitted with a value of zero for specified attribute combinations, even if no data points are recorded for those combinations during the reporting period. This is useful for maintaining consistent time series data and avoiding gaps in monitoring dashboards.
+
+#### Example
+
+In the following example, the `emit_zero` configuration is used to emit zero values for HTTP status code categories `2xx`, `3xx`, `4xx`, and `5xx`:
+
+```jsonnet
+local cel = std.native('cel');
+
+{
+  otel: {
+    endpoint: 'http://localhost:4317/',
+    gzip: true,
+  },
+  resource_attributes: [
+    {
+      key: 'service.name',
+      value: 'Amazon CloudFront',
+    },
+    {
+      key: 'aws.cloudfront.distribution_id',
+      value: cel('cloudfront.distributionId'),
+    },
+  ],
+  scope: {
+    name: 'test',
+    version: '1.0.0',
+    schema_url: 'https://example.com/schemas/1.0.0',
+  },
+  metrics: [
+    {
+      name: 'http.server.requests',
+      description: 'The number of HTTP requests',
+      type: 'Count',
+      attributes: [
+        {
+          key: 'http.status_code',
+          value: cel('log.scStatusCategory'),
+        },
+      ],
+      emit_zero: [
+        ['2xx'],
+        ['3xx'],
+        ['4xx'],
+        ['5xx'],
+      ],
+    },
+  ],
+}
+```
+
+In this configuration, even if there are no HTTP requests with status codes in the 2xx, 3xx, 4xx, or 5xx categories during the reporting period, the metrics system will still emit zero values for these categories. This helps maintain a complete and consistent set of metrics data.
+
 ### Example of Mackerel Labeled Metrics
 
-see [lambda/mackerel](./lambda/mackerel) dir for more details.
+See [lambda/mackerel](./lambda/mackerel) dir for more details.
 
-include terraform code and [lambroll](https://github.com/fujiwara/lambroll) configuration.
+Include terraform code and [lambroll](https://github.com/fujiwara/lambroll) configuration.
+
 
 ## License
 
