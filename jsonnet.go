@@ -69,15 +69,15 @@ func MakeVM(opts ...JsonnetOption) *jsonnet.VM {
 }
 
 var NativeFunctions = []*jsonnet.NativeFunction{
-	MastEnvNativeFunction,
+	MustEnvNativeFunction,
 	EnvNativeFunction,
 	JsonescapeNativeFunction,
 	Base64EncodeNativeFunction,
 	CELCapableNativeFunction,
-	CELSwitchNativeFunction,
+	SwitchNativeFunction,
 }
 
-var MastEnvNativeFunction = &jsonnet.NativeFunction{
+var MustEnvNativeFunction = &jsonnet.NativeFunction{
 	Name:   "must_env",
 	Params: []ast.Identifier{"name"},
 	Func: func(args []interface{}) (interface{}, error) {
@@ -171,32 +171,56 @@ var CELCapableNativeFunction = &jsonnet.NativeFunction{
 	},
 }
 
-var CELSwitchNativeFunction = &jsonnet.NativeFunction{
-	Name:   "cel_switch",
+var SwitchNativeFunction = &jsonnet.NativeFunction{
+	Name:   "switch",
 	Params: []ast.Identifier{"cases"},
 	Func: func(args []interface{}) (interface{}, error) {
 		if len(args) != 1 {
-			return nil, oops.Errorf("cel: invalid arguments length expected 1 got %d", len(args))
+			return nil, oops.Errorf("switch: invalid arguments length expected 1 got %d", len(args))
 		}
 		cases, ok := args[0].([]any)
 		if !ok {
-			return nil, oops.Errorf("cel: invalid arguments, expected string got %T", args[0])
+			return nil, oops.Errorf("switch: invalid arguments, expected string got %T", args[0])
 		}
 		defaultCount := 0
-		for _, c := range cases {
-			v, ok := c.(map[string]interface{})
+		for i, c := range cases {
+			v, ok := c.(map[string]any)
 			if !ok {
-				return nil, oops.Errorf("cel: invalid arguments, expected map[string]interface{} got %T", c)
+				return nil, oops.Errorf("switch: invalid arguments, expected map[string]interface{} got %T", c)
 			}
-			if _, ok := v["case"].(string); !ok {
-				if _, ok := v["default"]; !ok {
-					return nil, oops.Errorf("cel: invalid arguments, expected string case")
+			caseField, ok := v["case"]
+			if !ok {
+				defaultField, ok := v["default"]
+				if !ok {
+					return nil, oops.Errorf("switch: invalid arguments, expected string case")
 				}
 				defaultCount++
+				if defaultExpr, ok := castCELExpr(defaultField); ok {
+					cases[i] = map[string]any{
+						"default_expr": defaultExpr,
+					}
+				}
 				continue
 			}
-			if _, ok := v["value"]; !ok {
+			caseExpr, ok := castCELExpr(caseField)
+			if !ok {
+				return nil, oops.Errorf("switch: case must be a CEL expression")
+			}
+			valueField, ok := v["value"]
+			if !ok {
 				return nil, oops.Errorf("cel: invalid arguments, need value")
+			}
+
+			if valueExpr, ok := castCELExpr(valueField); ok {
+				cases[i] = map[string]any{
+					"case":       caseExpr,
+					"value_expr": valueExpr,
+				}
+				continue
+			}
+			cases[i] = map[string]any{
+				"case":  caseExpr,
+				"value": valueField,
 			}
 		}
 		if defaultCount > 1 {
@@ -206,4 +230,19 @@ var CELSwitchNativeFunction = &jsonnet.NativeFunction{
 			"switch": cases,
 		}, nil
 	},
+}
+
+func castCELExpr(value any) (string, bool) {
+	if value == nil {
+		return "", false
+	}
+	m, ok := value.(map[string]any)
+	if !ok {
+		return "", false
+	}
+	str, ok := m["expr"].(string)
+	if !ok {
+		return "", false
+	}
+	return str, ok
 }

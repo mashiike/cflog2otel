@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/ext"
 	"github.com/samber/oops"
 )
@@ -113,18 +114,22 @@ type celCapableField[T any] struct {
 }
 
 type celCapableFieldSwitch[T any] struct {
-	Case    string `json:"case,omitempty"`
-	Value   T      `json:"value,omitempty"`
-	Default T      `json:"default,omitempty"`
+	Case        string `json:"case,omitempty"`
+	Value       T      `json:"value,omitempty"`
+	ValueExpr   string `json:"value_expr,omitempty"`
+	Default     T      `json:"default,omitempty"`
+	DefaultExpr string `json:"default_expr,omitempty"`
 }
 
 type CELCapable[T any] struct {
-	raw              json.RawMessage
-	value            T
-	prog             cel.Program
-	switchCases      []cel.Program
-	switchCaseValues []T
-	switchDefault    T
+	raw                  json.RawMessage
+	value                T
+	prog                 cel.Program
+	switchCases          []cel.Program
+	switchCaseValues     []T
+	switchCaseValueProgs []cel.Program
+	switchDefault        T
+	switchDefaultProg    cel.Program
 }
 
 func (expr *CELCapable[T]) MarshalJSON() ([]byte, error) {
@@ -148,49 +153,62 @@ func (expr *CELCapable[T]) UnmarshalJSON(data []byte) error {
 	if field.Expr == "" && field.Switch == nil {
 		return fallback()
 	}
-	dummyVariables := &CELVariables{}
+
 	if field.Expr != "" {
-		ast, iss := defaultCELEnv.Compile(field.Expr)
-		if iss.Err() != nil {
-			return oops.Wrapf(iss.Err(), "failed to compile CEL expression")
-		}
-		prog, err := defaultCELEnv.Program(ast)
+		prog, out, err := compileAndEval(field.Expr)
 		if err != nil {
-			return oops.Wrapf(err, "failed to create CEL program")
+			return oops.Wrapf(err, "cel(%s)", field.Expr)
 		}
 		expr.prog = prog
-		ctx := context.Background()
-		if _, err := expr.Eval(ctx, dummyVariables); err != nil {
-			return oops.Wrapf(err, "check CEL expression type")
+		if _, ok := out.Value().(T); !ok {
+			return oops.Errorf("failed to convert CEL expression value to %T", expr.value)
 		}
 		return nil
 	}
 	var defaultCount int
 	expr.switchCases = make([]cel.Program, 0, len(field.Switch))
 	expr.switchCaseValues = make([]T, 0, len(field.Switch))
+	expr.switchCaseValueProgs = make([]cel.Program, 0, len(field.Switch))
 	for i, s := range field.Switch {
 		if s.Case == "" {
-			expr.switchDefault = s.Default
+			if s.DefaultExpr == "" {
+				expr.switchDefault = s.Default
+				defaultCount++
+				continue
+			}
+			prog, out, err := compileAndEval(s.DefaultExpr)
+			if err != nil {
+				return oops.Wrapf(err, "cel(%q) for default", s.DefaultExpr)
+			}
+			expr.switchDefaultProg = prog
+
+			if _, ok := out.Value().(T); !ok {
+				return oops.Errorf("failed to convert CEL expression value to %T", expr.value)
+			}
 			defaultCount++
 			continue
 		}
-		ast, iss := defaultCELEnv.Compile(s.Case)
-		if iss.Err() != nil {
-			return oops.Wrapf(iss.Err(), "failed to compile CEL expression")
-		}
-		prog, err := defaultCELEnv.Program(ast)
+		caseProg, caseOut, err := compileAndEval(s.Case)
 		if err != nil {
-			return oops.Wrapf(err, "failed to create CEL program")
+			return oops.Wrapf(err, "cel(%q) for case", s.Case)
 		}
-		out, _, err := prog.Eval(dummyVariables.MarshalMap())
-		if err != nil {
-			return oops.Wrapf(err, "switch case[%d] evaluation failed", i)
-		}
-		if out.Type() != cel.BoolType {
+		if caseOut.Type() != cel.BoolType {
 			return oops.Errorf("switch case[%d] must return boolean type", i)
 		}
-		expr.switchCases = append(expr.switchCases, prog)
+		var valueProg cel.Program
+		if s.ValueExpr != "" {
+			var valueOut ref.Val
+			valueProg, valueOut, err = compileAndEval(s.ValueExpr)
+			if err != nil {
+				return oops.Wrapf(err, "cel(%q) for value", s.ValueExpr)
+			}
+			if _, ok := valueOut.Value().(T); !ok {
+				return oops.Errorf("failed to convert CEL expression value to %T", expr.value)
+			}
+		}
+		expr.switchCases = append(expr.switchCases, caseProg)
 		expr.switchCaseValues = append(expr.switchCaseValues, s.Value)
+		expr.switchCaseValueProgs = append(expr.switchCaseValueProgs, valueProg)
 	}
 	if defaultCount > 1 {
 		return oops.Errorf("multiple default values in switch")
@@ -199,6 +217,23 @@ func (expr *CELCapable[T]) UnmarshalJSON(data []byte) error {
 		return oops.Errorf("no switch cases")
 	}
 	return nil
+}
+
+func compileAndEval(expr string) (cel.Program, ref.Val, error) {
+	ast, iss := defaultCELEnv.Compile(expr)
+	if iss.Err() != nil {
+		return nil, nil, oops.Wrapf(iss.Err(), "failed to compile CEL expression")
+	}
+	prog, err := defaultCELEnv.Program(ast)
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "failed to create CEL program")
+	}
+	dummyVariables := &CELVariables{}
+	out, _, err := prog.Eval(dummyVariables.MarshalMap())
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "failed to evaluate CEL expression")
+	}
+	return prog, out, nil
 }
 
 func (expr *CELCapable[T]) Eval(ctx context.Context, vars *CELVariables) (T, error) {
@@ -228,8 +263,30 @@ func (expr *CELCapable[T]) Eval(ctx context.Context, vars *CELVariables) (T, err
 			return expr.switchDefault, oops.Errorf("switch case[%d] must return boolean type", i)
 		}
 		if out.Value().(bool) {
+			if expr.switchCaseValueProgs[i] != nil {
+				valueOut, _, err := expr.switchCaseValueProgs[i].ContextEval(ctx, variables)
+				if err != nil {
+					return expr.switchDefault, oops.Wrapf(err, "switch case[%d] value evaluation failed", i)
+				}
+				value, ok := valueOut.Value().(T)
+				if !ok {
+					return expr.switchDefault, oops.Errorf("failed to convert CEL expression value to %T", expr.value)
+				}
+				return value, nil
+			}
 			return expr.switchCaseValues[i], nil
 		}
+	}
+	if expr.switchDefaultProg != nil {
+		out, _, err := expr.switchDefaultProg.ContextEval(ctx, variables)
+		if err != nil {
+			return expr.switchDefault, oops.Wrapf(err, "switch default evaluation failed")
+		}
+		value, ok := out.Value().(T)
+		if !ok {
+			return expr.switchDefault, oops.Errorf("failed to convert CEL expression value to %T", expr.value)
+		}
+		return value, nil
 	}
 	return expr.switchDefault, nil
 }

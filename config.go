@@ -58,6 +58,7 @@ type MetricsConfig struct {
 	IsCumulative      bool                 `json:"is_cumulative,omitempty"`
 	Boundaries        []float64            `json:"boundaries,omitempty"`
 	NoMinMax          bool                 `json:"no_min_max,omitempty"`
+	EmitZero          [][]any              `json:"emit_zero,omitempty"`
 	aggregateInterval time.Duration        `json:"-"`
 }
 
@@ -116,6 +117,8 @@ func (c *MetricsConfig) AggregateInterval() time.Duration {
 	return c.aggregateInterval
 }
 
+type AttributeValueWiledcard struct{}
+
 func (c *MetricsConfig) Validate() error {
 	if c.Name == "" {
 		return oops.Errorf("name is required")
@@ -125,6 +128,17 @@ func (c *MetricsConfig) Validate() error {
 			return oops.Wrapf(err, "attributes[%d]", i)
 		}
 	}
+	for i, attrValues := range c.EmitZero {
+		if len(attrValues) != len(c.Attributes) {
+			return oops.Errorf("emit_zero[%d] must have the same length as attributes", i)
+		}
+		for j, v := range attrValues {
+			if str, ok := v.(string); ok && str == "*" {
+				c.EmitZero[i][j] = AttributeValueWiledcard{}
+			}
+		}
+	}
+
 	if c.Interval == "" {
 		c.Interval = "1m"
 	}

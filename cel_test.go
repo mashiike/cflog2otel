@@ -27,7 +27,7 @@ func (tc testCaseCELCapable[T]) Name() string {
 func (tc testCaseCELCapable[T]) Run(t *testing.T) {
 	var expr cflog2otel.CELCapable[T]
 	vm := cflog2otel.MakeVM(cflog2otel.WithAWSConfig(aws.Config{}))
-	jsonStr, err := vm.EvaluateAnonymousSnippet("field.jsonnet", fmt.Sprintf("local cel = std.native('cel');local cel_switch = std.native('cel_switch');\n%s", tc.expr))
+	jsonStr, err := vm.EvaluateAnonymousSnippet("field.jsonnet", fmt.Sprintf("local cel = std.native('cel');local switch = std.native('switch');\n%s", tc.expr))
 	require.NoError(t, err)
 	t.Log(jsonStr)
 	err = json.Unmarshal([]byte(jsonStr), &expr)
@@ -101,9 +101,9 @@ func TestCELCapable(t *testing.T) {
 		},
 		testCaseCELCapable[string]{
 			name: "switch case yes",
-			expr: `cel_switch([
+			expr: `switch([
   {
-    case: 'bucket.name == "my-bucket"',
+    case: cel('bucket.name == "my-bucket"'),
     value: 'yes',
   },
   {
@@ -120,9 +120,9 @@ func TestCELCapable(t *testing.T) {
 		},
 		testCaseCELCapable[string]{
 			name: "switch case no",
-			expr: `cel_switch([
+			expr: `switch([
   {
-    case: 'bucket.name == "my-bucket"',
+    case: cel('bucket.name == "my-bucket"'),
     value: 'yes',
   },
   {
@@ -142,6 +142,50 @@ func TestCELCapable(t *testing.T) {
 			expr:             `cel('bucket.hoge')`,
 			variables:        &cflog2otel.CELVariables{},
 			wantUnmarshalErr: "undefined field 'hoge'",
+		},
+		testCaseCELCapable[string]{
+			name: "switch case cel value yes",
+			expr: `switch([
+  {
+    case: cel('bucket.name == "my-bucket"'),
+    value: cel('cloudfront.distributionId'),
+  },
+  {
+    default: cel('bucket.name'),
+  },
+])
+`,
+			variables: &cflog2otel.CELVariables{
+				Bucket: cflog2otel.CELVariablesS3Bucket{
+					Name: "my-bucket",
+				},
+				CloudFront: cflog2otel.CELVariablesCloudFront{
+					DistributionID: "my-distribution",
+				},
+			},
+			want: "my-distribution",
+		},
+		testCaseCELCapable[string]{
+			name: "switch case cel value no",
+			expr: `switch([
+  {
+    case: cel('bucket.name == "my-bucket"'),
+    value: cel('cloudfront.distributionId'),
+  },
+  {
+    default: cel('bucket.name'),
+  },
+])
+`,
+			variables: &cflog2otel.CELVariables{
+				Bucket: cflog2otel.CELVariablesS3Bucket{
+					Name: "my-bucket2",
+				},
+				CloudFront: cflog2otel.CELVariablesCloudFront{
+					DistributionID: "my-distribution",
+				},
+			},
+			want: "my-bucket2",
 		},
 	}
 	for _, tc := range cases {
