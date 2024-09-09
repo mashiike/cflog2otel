@@ -1,3 +1,3 @@
 package cflog2otel
 
-var Version = "v0.3.1"
+var Version = "v0.4.0"
