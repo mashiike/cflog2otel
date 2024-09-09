@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.3.1](https://github.com/mashiike/cflog2otel/compare/v0.3.0...v0.3.1) - 2024-09-09
+- add flag env comment by @mashiike in https://github.com/mashiike/cflog2otel/pull/17
+
 ## [v0.3.0](https://github.com/mashiike/cflog2otel/compare/v0.2.0...v0.3.0) - 2024-09-05
 - [Breakikng Changes] delete `cel_switch`, add `switch` by @mashiike in https://github.com/mashiike/cflog2otel/pull/14
 - Emit Zero Value by @mashiike in https://github.com/mashiike/cflog2otel/pull/16
