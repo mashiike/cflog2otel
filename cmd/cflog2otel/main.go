@@ -32,11 +32,11 @@ func _main(ctx context.Context) error {
 		configValidateOnly bool
 		renderConfig       bool
 	)
-	flag.StringVar(&logLevel, "log-level", "info", "log level")
-	flag.BoolVar(&logPrettify, "log-prettify", false, "log prettify")
-	flag.StringVar(&configPath, "config", "cflog2otel.jsonnet", "config file path")
-	flag.BoolVar(&configValidateOnly, "config-validate-only", false, "validate config only")
-	flag.BoolVar(&renderConfig, "render-config", false, "render config only")
+	flag.StringVar(&logLevel, "log-level", "info", "log level ($LOG_LEVEL)")
+	flag.BoolVar(&logPrettify, "log-prettify", false, "log prettify ($LOG_PRETTIFY)")
+	flag.StringVar(&configPath, "config", "cflog2otel.jsonnet", "config file path ($CONFIG)")
+	flag.BoolVar(&configValidateOnly, "config-validate-only", false, "validate config only ($CONFIG_VALIDATE_ONLY)")
+	flag.BoolVar(&renderConfig, "render-config", false, "render config only ($RENDER_CONFIG)")
 	flag.VisitAll(flagx.EnvToFlag)
 	flag.Parse()
 
