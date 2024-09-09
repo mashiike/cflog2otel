@@ -2,11 +2,14 @@ package otlptest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"sync"
 
+	"github.com/samber/oops"
 	collectormetrics "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	"google.golang.org/grpc"
 )
@@ -44,6 +47,17 @@ type MetricsCollector struct {
 	closed        bool
 	wg            sync.WaitGroup
 	serviceServer *metricServiceServer
+}
+
+func NewExporterWithWriter(w io.Writer) Exporter {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return ExporterFunc(func(ctx context.Context, req *collectormetrics.ExportMetricsServiceRequest) (*collectormetrics.ExportMetricsServiceResponse, error) {
+		if err := enc.Encode(req); err != nil {
+			return nil, oops.Wrapf(err, "failed to encode request")
+		}
+		return &collectormetrics.ExportMetricsServiceResponse{}, nil
+	})
 }
 
 func NewMetricsCollector(exporter Exporter) *MetricsCollector {

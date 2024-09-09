@@ -5,13 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/fatih/color"
 	"github.com/fujiwara/lamblocal"
 	"github.com/ken39arg/go-flagx"
 	"github.com/mashiike/cflog2otel"
+	"github.com/mashiike/cflog2otel/otlptest"
 	"github.com/mashiike/slogutils"
 	"github.com/samber/oops"
 )
@@ -31,12 +37,16 @@ func _main(ctx context.Context) error {
 		configPath         string
 		configValidateOnly bool
 		renderConfig       bool
+		localExporter      bool
+		s3URL              string
 	)
 	flag.StringVar(&logLevel, "log-level", "info", "log level ($LOG_LEVEL)")
 	flag.BoolVar(&logPrettify, "log-prettify", false, "log prettify ($LOG_PRETTIFY)")
 	flag.StringVar(&configPath, "config", "cflog2otel.jsonnet", "config file path ($CONFIG)")
 	flag.BoolVar(&configValidateOnly, "config-validate-only", false, "validate config only ($CONFIG_VALIDATE_ONLY)")
 	flag.BoolVar(&renderConfig, "render-config", false, "render config only ($RENDER_CONFIG)")
+	flag.StringVar(&s3URL, "s3-url", "", "s3 notification url ($S3_URL)")
+	flag.BoolVar(&localExporter, "local-collector", false, "use with test collector, export to stdout ($LOCAL_COLLECTOR)")
 	flag.VisitAll(flagx.EnvToFlag)
 	flag.Parse()
 
@@ -56,9 +66,36 @@ func _main(ctx context.Context) error {
 		}
 		return nil
 	}
+	if localExporter {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		collector := otlptest.NewMetricsCollector(otlptest.NewExporterWithWriter(os.Stdout))
+		cfg.Otel = cflog2otel.OtelConfig{
+			Endpoint: collector.URL,
+			GZip:     true,
+		}
+		if err := cfg.Otel.Validate(); err != nil {
+			return oops.Wrapf(err, "failed to validate otel config")
+		}
+		slog.Info("start local collector", "url", collector.URL)
+	}
 	app, err := cflog2otel.New(ctx, cfg)
 	if err != nil {
 		return oops.Wrapf(err, "failed to create app")
+	}
+	if s3URL != "" {
+		u, err := url.Parse(s3URL)
+		if err != nil {
+			return oops.Wrapf(err, "failed to parse s3 url")
+		}
+		if u.Scheme != "s3" {
+			return oops.Errorf("invalid s3 url")
+		}
+		dummyEvent, err := generateDummyS3Notification(u)
+		if err != nil {
+			return oops.Wrapf(err, "failed to generate dummy s3 notification")
+		}
+		lamblocal.CLISrc = strings.NewReader(dummyEvent)
 	}
 	return lamblocal.RunWithError(ctx, app.Invoke)
 }
@@ -111,4 +148,38 @@ func setupLogger(logLevel string, logPrettify bool) {
 	if parseErr != nil {
 		slog.Warn("failed to parse log level,fallback to info", "details", parseErr, "log_level", logLevel)
 	}
+}
+
+func generateDummyS3Notification(u *url.URL) (string, error) {
+	e := events.S3Event{
+		Records: []events.S3EventRecord{
+			{
+				EventVersion: "2.1",
+				EventSource:  "aws:s3",
+				AWSRegion:    os.Getenv("AWS_REGION"),
+				EventTime:    time.Now(),
+				EventName:    "ObjectCreated:Put",
+				S3: events.S3Entity{
+					SchemaVersion:   "1.0",
+					ConfigurationID: "testConfigRule",
+					Bucket: events.S3Bucket{
+						Name: u.Host,
+						Arn:  fmt.Sprintf("arn:aws:s3:::%s", u.Host),
+					},
+					Object: events.S3Object{
+						Key:       strings.TrimPrefix(u.Path, "/"),
+						Size:      1024,
+						ETag:      "0123456789abcdef0123456789abcdef",
+						VersionID: "096fKKXTRTtl3on89fVO.nfljtsv6qko",
+						Sequencer: "0A1B2C3D4E5F678901",
+					},
+				},
+			},
+		},
+	}
+	bs, err := json.Marshal(e)
+	if err != nil {
+		return "", oops.Wrapf(err, "failed to marshal s3 event")
+	}
+	return string(bs), nil
 }

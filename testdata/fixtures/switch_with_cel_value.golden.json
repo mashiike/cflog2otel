@@ -1,0 +1,82 @@
+{
+  "Resource": [
+    {
+      "Key": "aws.cloudfront.distribution_id",
+      "Value": {
+        "Type": "STRING",
+        "Value": "EMLARXS9EXAMPLE"
+      }
+    },
+    {
+      "Key": "service.name",
+      "Value": {
+        "Type": "STRING",
+        "Value": "Amazon CloudFront"
+      }
+    }
+  ],
+  "ScopeMetrics": [
+    {
+      "Scope": {
+        "Name": "test",
+        "Version": "",
+        "SchemaURL": ""
+      },
+      "Metrics": [
+        {
+          "Name": "http.server.requests",
+          "Description": "The number of HTTP requests",
+          "Unit": "",
+          "Data": {
+            "DataPoints": [
+              {
+                "Attributes": [
+                  {
+                    "Key": "http.host",
+                    "Value": {
+                      "Type": "STRING",
+                      "Value": "www.example.com"
+                    }
+                  },
+                  {
+                    "Key": "http.status_code",
+                    "Value": {
+                      "Type": "STRING",
+                      "Value": "5xx"
+                    }
+                  }
+                ],
+                "StartTime": "2019-12-13T22:36:00Z",
+                "Time": "2019-12-13T22:37:00Z",
+                "Value": 2
+              },
+              {
+                "Attributes": [
+                  {
+                    "Key": "http.host",
+                    "Value": {
+                      "Type": "STRING",
+                      "Value": "www.example.com"
+                    }
+                  },
+                  {
+                    "Key": "http.status_code",
+                    "Value": {
+                      "Type": "STRING",
+                      "Value": "5xx"
+                    }
+                  }
+                ],
+                "StartTime": "2019-12-13T22:37:00Z",
+                "Time": "2019-12-13T22:38:00Z",
+                "Value": 1
+              }
+            ],
+            "Temporality": "DeltaTemporality",
+            "IsMonotonic": true
+          }
+        }
+      ]
+    }
+  ]
+}

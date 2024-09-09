@@ -492,6 +492,13 @@ See [lambda/mackerel](./lambda/mackerel) dir for more details.
 
 Include terraform code and [lambroll](https://github.com/fujiwara/lambroll) configuration.
 
+### For Local Configuration Testing
+
+```shell
+$cflog2otel --s3-url s3://bucket-name/path/to/logs.gz --config config.jsonnet --local-collector
+```
+
+Output metrics to stdout.
 
 ## License
 
