@@ -33,7 +33,7 @@ type CELVariablesLog struct {
 	CsCookie               *string   `json:"csCookie" cel:"csCookie"`
 	EdgeResultType         *string   `json:"xEdgeResultType" cel:"xEdgeResultType"`
 	EdgeRequestID          *string   `json:"xEdgeRequestId" cel:"xEdgeRequestId"`
-	HostHeader             *string   `json:"hostHeader" cel:"hostHeader"`
+	HostHeader             *string   `json:"xHostHeader" cel:"xHostHeader"`
 	CsProtocol             *string   `json:"csProtocol" cel:"csProtocol"`
 	CsBytes                *int      `json:"csBytes" cel:"csBytes"`
 	TimeTaken              *float64  `json:"timeTaken" cel:"timeTaken"`
