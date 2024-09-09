@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.4.0](https://github.com/mashiike/cflog2otel/compare/v0.3.1...v0.4.0) - 2024-09-09
+- not hostHeader -> xHostHeader by @mashiike in https://github.com/mashiike/cflog2otel/pull/19
+
 ## [v0.3.1](https://github.com/mashiike/cflog2otel/compare/v0.3.0...v0.3.1) - 2024-09-09
 - add flag env comment by @mashiike in https://github.com/mashiike/cflog2otel/pull/17
 
