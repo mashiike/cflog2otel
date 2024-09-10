@@ -46,30 +46,9 @@
                     }
                   }
                 ],
-                "StartTime": "2019-12-13T22:36:00Z",
-                "Time": "2019-12-13T22:37:00Z",
-                "Value": 2
-              },
-              {
-                "Attributes": [
-                  {
-                    "Key": "http.host",
-                    "Value": {
-                      "Type": "STRING",
-                      "Value": "www.example.com"
-                    }
-                  },
-                  {
-                    "Key": "http.status_code",
-                    "Value": {
-                      "Type": "STRING",
-                      "Value": "5xx"
-                    }
-                  }
-                ],
-                "StartTime": "2019-12-13T22:37:00Z",
-                "Time": "2019-12-13T22:38:00Z",
-                "Value": 1
+                "StartTime": "2019-12-01T22:51:00Z",
+                "Time": "2019-12-01T22:52:00Z",
+                "Value": 3
               }
             ],
             "Temporality": "DeltaTemporality",

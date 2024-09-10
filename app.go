@@ -320,6 +320,9 @@ func (app *App) GetVariablesAndLogs(ctx context.Context, notification events.S3E
 		return nil, nil, oops.Wrapf(err, "failed to parse cloudfront log")
 	}
 	if app.cfg.Backfill.Enabled {
+		currentObjectLines := len(logs)
+		skipLines := 0
+		backfilTotalLines := 0
 		eventTime := notification.EventTime
 		p := s3.NewListObjectsV2Paginator(app.client, &s3.ListObjectsV2Input{
 			Bucket: &notification.S3.Bucket.Name,
@@ -347,12 +350,21 @@ func (app *App) GetVariablesAndLogs(ctx context.Context, notification events.S3E
 				if err != nil {
 					return nil, nil, oops.Wrapf(err, "failed to parse cloudfront log")
 				}
-				logs = append(logs, currentLogs...)
+				backfilTotalLines += len(currentLogs)
+				for _, currentLog := range currentLogs {
+					if d := eventTime.Sub(currentLog.Timestamp); d > timeTolerance {
+						skipLines++
+						slog.DebugContext(ctx, "skipping backfill log", "timestamp", currentLog.Timestamp, "time_tolerance", timeTolerance, "since", d)
+						continue
+					}
+					logs = append(logs, currentLog)
+				}
 			}
 		}
 		slices.SortStableFunc(logs, func(i, j CELVariablesLog) int {
 			return i.Timestamp.Compare(j.Timestamp)
 		})
+		slog.InfoContext(ctx, "backfill logs", "total", backfilTotalLines+currentObjectLines, "skipped", skipLines)
 	}
 	celVariables := NewCELVariables(notification, distributionID)
 	return celVariables, logs, nil

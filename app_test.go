@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"io"
+	"log/slog"
 	"os"
 	"slices"
 	"testing"
@@ -32,7 +33,7 @@ func TestE2E(t *testing.T) {
 		"GetObject",
 		mock.Anything,
 		mock.MatchedBy(func(input *s3.GetObjectInput) bool {
-			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz"
+			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-12-01-22.RT4KCN4SGK9.gz"
 		}),
 	).Return(&s3.GetObjectOutput{
 		Body: io.NopCloser(
@@ -67,7 +68,10 @@ func TestE2E(t *testing.T) {
 }
 
 func TestE2E__Backfill(t *testing.T) {
-	restore := flextime.Set(time.Date(2019, 11, 14, 20, 33, 0, 0, time.UTC))
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})))
+	restore := flextime.Set(time.Date(2019, 12, 01, 22, 56, 0, 0, time.UTC))
 	defer restore()
 	ctrl := newMockControler(t)
 	defer ctrl.Finish()
@@ -80,7 +84,7 @@ func TestE2E__Backfill(t *testing.T) {
 		"GetObject",
 		mock.Anything,
 		mock.MatchedBy(func(input *s3.GetObjectInput) bool {
-			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz"
+			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-12-01-22.RT4KCN4SGK9.gz"
 		}),
 	).Return(&s3.GetObjectOutput{
 		Body: io.NopCloser(
@@ -92,7 +96,7 @@ func TestE2E__Backfill(t *testing.T) {
 		"GetObject",
 		mock.Anything,
 		mock.MatchedBy(func(input *s3.GetObjectInput) bool {
-			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT3KCN4SGK9.gz"
+			return input.Bucket != nil && *input.Bucket == "example-bucket" && input.Key != nil && *input.Key == "logs/EMLARXS9EXAMPLE.2019-12-01-22.RT3KCN4SGK9.gz"
 		}),
 	).Return(&s3.GetObjectOutput{
 		Body: io.NopCloser(
@@ -102,20 +106,20 @@ func TestE2E__Backfill(t *testing.T) {
 	}, nil)
 	client.On("ListObjectsV2", mock.Anything, &s3.ListObjectsV2Input{
 		Bucket: aws.String("example-bucket"),
-		Prefix: aws.String("logs/EMLARXS9EXAMPLE.2019-11-14-20."),
+		Prefix: aws.String("logs/EMLARXS9EXAMPLE.2019-12-01-22."),
 	}).Return(&s3.ListObjectsV2Output{
 		Contents: []types.Object{
 			{
-				Key:          aws.String("logs/EMLARXS9EXAMPLE.2019-11-14-20.RT2KCN4SGK9.gz"),
-				LastModified: aws.Time(time.Date(2019, 11, 14, 20, 10, 0, 0, time.UTC)),
+				Key:          aws.String("logs/EMLARXS9EXAMPLE.2019-12-01-22.RT2KCN4SGK9.gz"),
+				LastModified: aws.Time(time.Date(2019, 12, 01, 22, 05, 0, 0, time.UTC)),
 			},
 			{
-				Key:          aws.String("logs/EMLARXS9EXAMPLE.2019-11-14-20.RT3KCN4SGK9.gz"),
-				LastModified: aws.Time(time.Date(2019, 11, 14, 20, 23, 0, 0, time.UTC)),
+				Key:          aws.String("logs/EMLARXS9EXAMPLE.2019-12-01-22.RT3KCN4SGK9.gz"),
+				LastModified: aws.Time(time.Date(2019, 12, 01, 22, 40, 0, 0, time.UTC)),
 			},
 			{
-				Key:          aws.String("logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz"),
-				LastModified: aws.Time(time.Date(2019, 11, 14, 20, 32, 0, 0, time.UTC)),
+				Key:          aws.String("logs/EMLARXS9EXAMPLE.2019-12-01-22.RT4KCN4SGK9.gz"),
+				LastModified: aws.Time(time.Date(2019, 12, 01, 22, 52, 0, 0, time.UTC)),
 			},
 		},
 	}, nil)

@@ -36,7 +36,7 @@ func TestAggreagation(t *testing.T) {
 						Name: "example-bucket",
 					},
 					Object: events.S3Object{
-						Key: "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz",
+						Key: "logs/EMLARXS9EXAMPLE.2019-12-01-22.RT4KCN4SGK9.gz",
 					},
 				},
 			}, "EMLARXS9EXAMPLE")

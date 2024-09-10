@@ -31,15 +31,9 @@
             "DataPoints": [
               {
                 "Attributes": [],
-                "StartTime": "2019-12-13T22:36:00Z",
-                "Time": "2019-12-13T22:37:00Z",
-                "Value": 2
-              },
-              {
-                "Attributes": [],
-                "StartTime": "2019-12-13T22:37:00Z",
-                "Time": "2019-12-13T22:38:00Z",
-                "Value": 1
+                "StartTime": "2019-12-01T22:51:00Z",
+                "Time": "2019-12-01T22:52:00Z",
+                "Value": 3
               }
             ],
             "Temporality": "DeltaTemporality",
