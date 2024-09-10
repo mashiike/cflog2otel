@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.6.0](https://github.com/mashiike/cflog2otel/compare/v0.5.0...v0.6.0) - 2024-09-10
+- Optimize Backfill Behavior by @mashiike in https://github.com/mashiike/cflog2otel/pull/26
+- Bump the aws-sdk-go-v2 group with 3 updates by @dependabot in https://github.com/mashiike/cflog2otel/pull/23
+- Bump google.golang.org/grpc from 1.66.0 to 1.66.1 by @dependabot in https://github.com/mashiike/cflog2otel/pull/25
+
 ## [v0.5.0](https://github.com/mashiike/cflog2otel/compare/v0.4.0...v0.5.0) - 2024-09-09
 - add flag for local run, --s3-url and --local-collector by @mashiike in https://github.com/mashiike/cflog2otel/pull/21
 
