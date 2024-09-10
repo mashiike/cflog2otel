@@ -38,30 +38,30 @@
                           "key": "http.status_code",
                           "value": {
                             "Value": {
-                              "StringValue": "2xx"
-                            }
-                          }
-                        }
-                      ],
-                      "start_time_unix_nano": 1575493320000000000,
-                      "time_unix_nano": 1575493380000000000,
-                      "Value": {
-                        "AsInt": 3
-                      }
-                    },
-                    {
-                      "attributes": [
-                        {
-                          "key": "http.status_code",
-                          "value": {
-                            "Value": {
                               "StringValue": "4xx"
                             }
                           }
                         }
                       ],
-                      "start_time_unix_nano": 1575493320000000000,
-                      "time_unix_nano": 1575493380000000000,
+                      "start_time_unix_nano": 1575239940000000000,
+                      "time_unix_nano": 1575240000000000000,
+                      "Value": {
+                        "AsInt": 3
+                      }
+                    },
+                    {
+                      "attributes": [
+                        {
+                          "key": "http.status_code",
+                          "value": {
+                            "Value": {
+                              "StringValue": "2xx"
+                            }
+                          }
+                        }
+                      ],
+                      "start_time_unix_nano": 1575240120000000000,
+                      "time_unix_nano": 1575240180000000000,
                       "Value": {
                         "AsInt": 3
                       }
@@ -77,27 +77,10 @@
                           }
                         }
                       ],
-                      "start_time_unix_nano": 1576276560000000000,
-                      "time_unix_nano": 1576276620000000000,
+                      "start_time_unix_nano": 1575240660000000000,
+                      "time_unix_nano": 1575240720000000000,
                       "Value": {
-                        "AsInt": 2
-                      }
-                    },
-                    {
-                      "attributes": [
-                        {
-                          "key": "http.status_code",
-                          "value": {
-                            "Value": {
-                              "StringValue": "5xx"
-                            }
-                          }
-                        }
-                      ],
-                      "start_time_unix_nano": 1576276620000000000,
-                      "time_unix_nano": 1576276680000000000,
-                      "Value": {
-                        "AsInt": 1
+                        "AsInt": 3
                       }
                     }
                   ],

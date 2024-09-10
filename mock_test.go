@@ -40,6 +40,8 @@ func newMockS3APIClient(ctrl *mockControler) *mockS3APIClient {
 var _ cflog2otel.S3APIClient = (*mockS3APIClient)(nil)
 
 func (m *mockS3APIClient) GetObject(ctx context.Context, input *s3.GetObjectInput, opts ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	m.tb.Helper()
+	m.tb.Log("GetObject", "bucket", *input.Bucket, "key", *input.Key)
 	ret := m.Called(ctx, input)
 	output := ret.Get(0)
 	if output == nil {
@@ -53,6 +55,8 @@ func (m *mockS3APIClient) GetObject(ctx context.Context, input *s3.GetObjectInpu
 }
 
 func (m *mockS3APIClient) ListObjectsV2(ctx context.Context, input *s3.ListObjectsV2Input, opts ...func(*s3.Options)) (*s3.ListObjectsV2Output, error) {
+	m.tb.Helper()
+	m.tb.Log("ListObjectsV2", "bucket", *input.Bucket)
 	ret := m.Called(ctx, input)
 	output := ret.Get(0)
 	if output == nil {

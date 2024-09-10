@@ -17,7 +17,7 @@ local cel = std.native('cel');
   ],
   backfill: {
     enabled: true,
-    time_tolerance: '15m',
+    time_tolerance: '30m',
   },
   metrics: [
     {

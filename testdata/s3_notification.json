@@ -4,7 +4,7 @@
       "eventVersion": "2.1",
       "eventSource": "aws:s3",
       "awsRegion": "us-west-2",
-      "eventTime": "2019-11-14T20:35:00.000Z",
+      "eventTime": "2019-12-01T22:56:00.000Z",
       "eventName": "ObjectCreated:Put",
       "userIdentity": {
         "principalId": "AWS:EXAMPLE"
@@ -27,7 +27,7 @@
           "arn": "arn:aws:s3:::example-bucket"
         },
         "object": {
-          "key": "logs/EMLARXS9EXAMPLE.2019-11-14-20.RT4KCN4SGK9.gz",
+          "key": "logs/EMLARXS9EXAMPLE.2019-12-01-22.RT4KCN4SGK9.gz",
           "size": 1024,
           "eTag": "0123456789abcdef0123456789abcdef",
           "sequencer": "0A1B2C3D4E5F678901"
