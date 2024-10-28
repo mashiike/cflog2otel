@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.6.1](https://github.com/mashiike/cflog2otel/compare/v0.6.0...v0.6.1) - 2024-10-28
+- Bump the aws-sdk-go-v2 group across 1 directory with 7 updates by @dependabot in https://github.com/mashiike/cflog2otel/pull/42
+
 ## [v0.6.0](https://github.com/mashiike/cflog2otel/compare/v0.5.0...v0.6.0) - 2024-09-10
 - Optimize Backfill Behavior by @mashiike in https://github.com/mashiike/cflog2otel/pull/26
 - Bump the aws-sdk-go-v2 group with 3 updates by @dependabot in https://github.com/mashiike/cflog2otel/pull/23
