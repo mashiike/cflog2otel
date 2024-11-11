@@ -12,7 +12,7 @@ require (
 	github.com/fatih/color v1.17.0
 	github.com/fujiwara/lamblocal v0.0.4
 	github.com/fujiwara/ssm-lookup v0.1.0
-	github.com/google/cel-go v0.21.0
+	github.com/google/cel-go v0.22.0
 	github.com/google/go-jsonnet v0.20.0
 	github.com/ken39arg/go-flagx v0.0.0-20220608183922-7cf7c6c0093c
 	github.com/mashiike/slogutils v0.4.0
@@ -28,6 +28,7 @@ require (
 )
 
 require (
+	cel.dev/expr v0.18.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.42 // indirect
