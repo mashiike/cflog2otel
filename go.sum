@@ -101,8 +101,8 @@ github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
 github.com/samber/lo v1.47.0 h1:z7RynLwP5nbyRscyvcD043DWYoOcYRv3mV8lBeqOCLc=
 github.com/samber/lo v1.47.0/go.mod h1:RmDH9Ct32Qy3gduHQuKJ3gW1fMHAnE/fAzQuf6He5cU=
-github.com/samber/oops v1.13.1 h1:ZTKqsTq1F/og29+wS0tb/NJS0RENRyWE3KrIRZLjdY0=
-github.com/samber/oops v1.13.1/go.mod h1:xEXk4BLyqajkvCxzpxBnqfzHzRLFk3+g4E+tOJtOPZY=
+github.com/samber/oops v1.14.1 h1:26kOy2w3PpahR7GlTEgRSIxH1UjjueGPGV1ndpQolGA=
+github.com/samber/oops v1.14.1/go.mod h1:7fxtMoVZW/AnCTSQysOO2e/aDjP/uIACoxr0eE6w3dc=
 github.com/sebdah/goldie/v2 v2.5.5 h1:rx1mwF95RxZ3/83sdS4Yp7t2C5TCokvWP4TBRbAyEWY=
 github.com/sebdah/goldie/v2 v2.5.5/go.mod h1:oZ9fp0+se1eapSRjfYbsV/0Hqhbuu3bJVvKI/NNtssI=
 github.com/sergi/go-diff v1.0.0/go.mod h1:0CfEIISq7TuYL3j771MWULgwwjU+GofnZX9QAmXWZgo=
