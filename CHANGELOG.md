@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.6.1](https://github.com/mashiike/cflog2otel/compare/v0.6.0...v0.6.1) - 2025-02-04
+- Bump the aws-sdk-go-v2 group across 1 directory with 7 updates by @dependabot in https://github.com/mashiike/cflog2otel/pull/42
+- Bump github.com/google/cel-go from 0.21.0 to 0.23.0 by @dependabot in https://github.com/mashiike/cflog2otel/pull/65
+- Bump github.com/samber/oops from 1.13.1 to 1.16.0 by @dependabot in https://github.com/mashiike/cflog2otel/pull/69
+
 ## [v0.6.0](https://github.com/mashiike/cflog2otel/compare/v0.5.0...v0.6.0) - 2024-09-10
 - Optimize Backfill Behavior by @mashiike in https://github.com/mashiike/cflog2otel/pull/26
 - Bump the aws-sdk-go-v2 group with 3 updates by @dependabot in https://github.com/mashiike/cflog2otel/pull/23
