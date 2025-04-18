@@ -120,8 +120,6 @@ func (c *MetricsConfig) AggregateInterval() time.Duration {
 	return c.aggregateInterval
 }
 
-type AttributeValueWiledcard struct{}
-
 func (c *MetricsConfig) Validate() error {
 	if c.Name == "" {
 		return oops.Errorf("name is required")
