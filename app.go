@@ -396,22 +396,6 @@ func IsGzipped(data []byte) bool {
 	return len(data) > 2 && data[0] == 0x1f && data[1] == 0x8b
 }
 
-func ToAttribute(ctx context.Context, key string, value any) (attribute.KeyValue, bool) {
-	switch v := value.(type) {
-	case string:
-		return attribute.String(key, v), true
-	case int64:
-		return attribute.Int64(key, v), true
-	case float64:
-		return attribute.Float64(key, v), true
-	case bool:
-		return attribute.Bool(key, v), true
-	default:
-		slog.WarnContext(ctx, "unsupported attribute type", "key", key, "value", value)
-		return attribute.KeyValue{}, false
-	}
-}
-
 func ToAttributes(ctx context.Context, cfgs []AttributeConfig, celVariables *CELVariables) ([]attribute.KeyValue, error) {
 	attrs := make([]attribute.KeyValue, 0)
 	for _, cfg := range cfgs {
@@ -422,11 +406,18 @@ func ToAttributes(ctx context.Context, cfgs []AttributeConfig, celVariables *CEL
 		if val == nil {
 			continue
 		}
-		attr, ok := ToAttribute(ctx, cfg.Key, val)
-		if !ok {
-			continue
+		switch v := val.(type) {
+		case string:
+			attrs = append(attrs, attribute.String(cfg.Key, v))
+		case int64:
+			attrs = append(attrs, attribute.Int64(cfg.Key, v))
+		case float64:
+			attrs = append(attrs, attribute.Float64(cfg.Key, v))
+		case bool:
+			attrs = append(attrs, attribute.Bool(cfg.Key, v))
+		default:
+			slog.WarnContext(ctx, "unsupported attribute type", "key", cfg.Key, "value", val)
 		}
-		attrs = append(attrs, attr)
 	}
 	return attrs, nil
 }

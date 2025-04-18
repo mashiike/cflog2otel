@@ -70,13 +70,6 @@ func Aggregate(ctx context.Context, cfg *Config, celVariables *CELVariables, log
 			if err != nil {
 				return nil, oops.Wrapf(err, "failed to aggregate metric %q", mcfg.Name)
 			}
-			if len(mcfg.EmitZero) == 0 {
-				continue
-			}
-			target.ScopeMetrics[0].Metrics[metricsIndex], err = appendZeroMetric(ctx, celVariables.Log.Timestamp, target.ScopeMetrics[0].Metrics[metricsIndex], mcfg)
-			if err != nil {
-				return nil, oops.Wrapf(err, "failed to append zero metric %q", mcfg.Name)
-			}
 		}
 	}
 	resp := make([]*metricdata.ResourceMetrics, 0, len(resourceMetrics))
@@ -98,88 +91,6 @@ func Aggregate(ctx context.Context, cfg *Config, celVariables *CELVariables, log
 		resp = append(resp, r)
 	}
 	return resp, nil
-}
-
-func appendZeroMetric(ctx context.Context, timestamp time.Time, metrics metricdata.Metrics, config MetricsConfig) (metricdata.Metrics, error) {
-	startTime, t := getStartTimeAndTime(config, timestamp)
-	for _, attributeValues := range config.EmitZero {
-		var attrs []attribute.KeyValue
-		for i, v := range attributeValues {
-			if attr, ok := ToAttribute(ctx, config.Attributes[i].Key, v); ok {
-				attrs = append(attrs, attr)
-			}
-		}
-		if len(attrs) == 0 {
-			continue
-		}
-		attrSet := attribute.NewSet(attrs...)
-		var found bool
-		switch data := metrics.Data.(type) {
-		case metricdata.Sum[int64]:
-			for _, dp := range data.DataPoints {
-				if !dp.Time.Equal(t) {
-					continue
-				}
-				if !dp.Attributes.Equals(&attrSet) {
-					continue
-				}
-				found = true
-				break
-			}
-		case metricdata.Sum[float64]:
-			for _, dp := range data.DataPoints {
-				if !dp.Time.Equal(t) {
-					continue
-				}
-				if !dp.Attributes.Equals(&attrSet) {
-					continue
-				}
-				found = true
-				break
-			}
-		case metricdata.Histogram[float64]:
-			for _, dp := range data.DataPoints {
-				if !dp.Time.Equal(t) {
-					continue
-				}
-				if !dp.Attributes.Equals(&attrSet) {
-					continue
-				}
-				found = true
-				break
-			}
-		default:
-			return metrics, oops.Errorf("unsupported data type for metric %q", config.Name)
-		}
-		if found {
-			continue
-		}
-		switch data := metrics.Data.(type) {
-		case metricdata.Sum[int64]:
-			data.DataPoints = append(data.DataPoints, metricdata.DataPoint[int64]{
-				StartTime:  startTime,
-				Time:       t,
-				Value:      0,
-				Attributes: attrSet,
-			})
-			metrics.Data = data
-		case metricdata.Sum[float64]:
-			data.DataPoints = append(data.DataPoints, metricdata.DataPoint[float64]{
-				StartTime:  startTime,
-				Time:       t,
-				Value:      0,
-				Attributes: attrSet,
-			})
-			metrics.Data = data
-		case metricdata.Histogram[float64]:
-			dp := newEmptyHistgramDataPonit[float64](startTime, t, attrSet, config.Boundaries)
-			data.DataPoints = append(data.DataPoints, dp)
-			metrics.Data = data
-		default:
-			return metrics, oops.Errorf("unsupported data type for metric %q", config.Name)
-		}
-	}
-	return metrics, nil
 }
 
 func LenDataPoints(data metricdata.Aggregation) int {
@@ -221,19 +132,14 @@ func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config Met
 	}
 }
 
-func getStartTimeAndTime(config MetricsConfig, t time.Time) (time.Time, time.Time) {
-	startTime := t.Truncate(config.AggregateInterval())
-	return startTime, startTime.Add(config.AggregateInterval())
-}
-
 func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariables) (time.Time, time.Time, attribute.Set, error) {
+	t := vars.Log.Timestamp.Truncate(config.AggregateInterval())
 	attrs, err := ToAttributes(ctx, config.Attributes, vars)
 	if err != nil {
 		return time.Time{}, time.Time{}, attribute.Set{}, oops.Wrapf(err, "failed to convert attributes")
 	}
 	attrSet := attribute.NewSet(attrs...)
-	startTime, t := getStartTimeAndTime(config, vars.Log.Timestamp)
-	return startTime, t, attrSet, nil
+	return t, t.Add(config.AggregateInterval()), attrSet, nil
 }
 
 func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
@@ -366,29 +272,24 @@ func aggregateForHistogramMetric(ctx context.Context, metrics metricdata.Metrics
 		break
 	}
 	if !found {
-		dp := newEmptyHistgramDataPonit[float64](startTime, t, attrSet, config.Boundaries)
+		dp := metricdata.HistogramDataPoint[float64]{
+			StartTime:  startTime,
+			Time:       t,
+			Count:      0,
+			Sum:        0,
+			Attributes: attrSet,
+		}
+		if config.Boundaries != nil {
+			dp.Bounds = make([]float64, len(config.Boundaries))
+			copy(dp.Bounds, config.Boundaries)
+			dp.BucketCounts = make([]uint64, len(config.Boundaries)+1)
+		}
 		data.DataPoints = append(data.DataPoints, dp)
 		targetDPIndex = len(data.DataPoints) - 1
 	}
 	data.DataPoints[targetDPIndex] = AppendValueToHistogramDataPoint(value, data.DataPoints[targetDPIndex], config.NoMinMax)
 	metrics.Data = data
 	return metrics, nil
-}
-
-func newEmptyHistgramDataPonit[N int64 | float64](startTime time.Time, t time.Time, attrSet attribute.Set, bounds []float64) metricdata.HistogramDataPoint[N] {
-	dp := metricdata.HistogramDataPoint[N]{
-		StartTime:  startTime,
-		Time:       t,
-		Count:      0,
-		Sum:        0,
-		Attributes: attrSet,
-	}
-	if bounds != nil {
-		dp.Bounds = make([]float64, len(bounds))
-		copy(dp.Bounds, bounds)
-		dp.BucketCounts = make([]uint64, len(bounds)+1)
-	}
-	return dp
 }
 
 func AppendValueToHistogramDataPoint[N int64 | float64](value N, dp metricdata.HistogramDataPoint[N], noMinMax bool) metricdata.HistogramDataPoint[N] {

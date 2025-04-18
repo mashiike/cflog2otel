@@ -120,6 +120,8 @@ func (c *MetricsConfig) AggregateInterval() time.Duration {
 	return c.aggregateInterval
 }
 
+type AttributeValueWiledcard struct{}
+
 func (c *MetricsConfig) Validate() error {
 	if c.Name == "" {
 		return oops.Errorf("name is required")
@@ -132,6 +134,11 @@ func (c *MetricsConfig) Validate() error {
 	for i, attrValues := range c.EmitZero {
 		if len(attrValues) != len(c.Attributes) {
 			return oops.Errorf("emit_zero[%d] must have the same length as attributes", i)
+		}
+		for j, v := range attrValues {
+			if str, ok := v.(string); ok && str == "*" {
+				c.EmitZero[i][j] = AttributeValueWiledcard{}
+			}
 		}
 	}
 
