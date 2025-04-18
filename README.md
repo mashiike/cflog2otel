@@ -433,9 +433,9 @@ If `no_min_max` is true, the not  calculate the histogram of the minimum and max
 
 ### Example of Mackerel Labeled Metrics
 
-see [lambda/mackerel](./lambda/mackerel) dir for more details.
+See [lambda/mackerel](./lambda/mackerel) dir for more details.
 
-include terraform code and [lambroll](https://github.com/fujiwara/lambroll) configuration.
+Include terraform code and [lambroll](https://github.com/fujiwara/lambroll) configuration.
 
 ### For Local Configuration Testing
 
