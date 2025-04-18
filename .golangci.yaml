@@ -1,39 +1,67 @@
-linters-settings:
-  gofmt:
-    simplify: true
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-    exclude-functions: # `ignore` の代わりに `exclude-functions` を使用
-      - '[rR]ead'
-      - '[w|W]rite'
-      - '[c|C]lose'
-      - '[c|C]ommit'
-      - '[r|R]ollback'
-      - '[p|P]rintln'
+version: 2
 
 linters:
-  disable-all: true
+  default: standard
   enable:
-    - govet
+    - unconvert
+    - cyclop
     - revive
-    - gocyclo
+    - depguard
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        - "fmt.Fprintln"
+        - "fmt.Fprintf"
+        - "fmt.Fprint"
+        - "io.WriteString"
+        - "io.Copy"
+        - "(io.Closer).Close"
+        - "os.Setenv"
+        - "(io.ReadCloser).Close"
+        - "(*bytes.Buffer).Write"
+        - "(*bytes.Buffer).WriteString"
+        - "(*bytes.Buffer).WriteTo"
+        - "(net/http.ResponseWriter).Write"
+        - "(*os.File).Close"
+        - "(*encoding/json.Encoder).Encode"
+        - "(net.Listener).Close"
+        - "(*net/http.Server).Shutdown"
+        - "(*io.PipeWriter).Write"
+    revive:
+      max-open-files: 2048
+      rules:
+        - name: blank-imports
+          severity: warning
+          disabled: false
+        - name: exported
+          disabled: true
+    cyclop:
+      max-complexity: 17
+    depguard:
+      rules:
+        main:
+          list-mode: lax
+          deny:
+            - pkg: "github.com/aws/aws-sdk-go/"
+              desc: use github.com/aws/aws-sdk-go-v2
+run:
+  tests: false
+  timeout: 15m
+  concurrency: 15
+  relative-path-mode: gomod
+  issues-exit-code: 2
+
+formatters:
+  enable:
     - gofmt
     - goimports
-    - errcheck
-    - unconvert
-    - ineffassign
-    - typecheck
-    - unused
-    - staticcheck
-
-run:
-  deadline: 10m
-
-issues:
-  exclude-dirs:
-    - vendor
-    - third_party
-  exclude-files:
-    - ".*\\.gen\\.go"
-    - ".*_test\\.go"
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    paths:
+      - ".*\\.gen\\.go$"
+      - "internal\\/testutil\\/.*\\.go$"
