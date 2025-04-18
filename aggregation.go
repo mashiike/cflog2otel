@@ -70,13 +70,6 @@ func Aggregate(ctx context.Context, cfg *Config, celVariables *CELVariables, log
 			if err != nil {
 				return nil, oops.Wrapf(err, "failed to aggregate metric %q", mcfg.Name)
 			}
-			if len(mcfg.EmitZero) == 0 {
-				continue
-			}
-			target.ScopeMetrics[0].Metrics[metricsIndex], err = appendZeroMetric(ctx, celVariables.Log.Timestamp, target.ScopeMetrics[0].Metrics[metricsIndex], mcfg)
-			if err != nil {
-				return nil, oops.Wrapf(err, "failed to append zero metric %q", mcfg.Name)
-			}
 		}
 	}
 	resp := make([]*metricdata.ResourceMetrics, 0, len(resourceMetrics))
@@ -98,88 +91,6 @@ func Aggregate(ctx context.Context, cfg *Config, celVariables *CELVariables, log
 		resp = append(resp, r)
 	}
 	return resp, nil
-}
-
-func appendZeroMetric(ctx context.Context, timestamp time.Time, metrics metricdata.Metrics, config MetricsConfig) (metricdata.Metrics, error) {
-	startTime, t := getStartTimeAndTime(config, timestamp)
-	for _, attributeValues := range config.EmitZero {
-		var attrs []attribute.KeyValue
-		for i, v := range attributeValues {
-			if attr, ok := ToAttribute(ctx, config.Attributes[i].Key, v); ok {
-				attrs = append(attrs, attr)
-			}
-		}
-		if len(attrs) == 0 {
-			continue
-		}
-		attrSet := attribute.NewSet(attrs...)
-		var found bool
-		switch data := metrics.Data.(type) {
-		case metricdata.Sum[int64]:
-			for _, dp := range data.DataPoints {
-				if !dp.Time.Equal(t) {
-					continue
-				}
-				if !dp.Attributes.Equals(&attrSet) {
-					continue
-				}
-				found = true
-				break
-			}
-		case metricdata.Sum[float64]:
-			for _, dp := range data.DataPoints {
-				if !dp.Time.Equal(t) {
-					continue
-				}
-				if !dp.Attributes.Equals(&attrSet) {
-					continue
-				}
-				found = true
-				break
-			}
-		case metricdata.Histogram[float64]:
-			for _, dp := range data.DataPoints {
-				if !dp.Time.Equal(t) {
-					continue
-				}
-				if !dp.Attributes.Equals(&attrSet) {
-					continue
-				}
-				found = true
-				break
-			}
-		default:
-			return metrics, oops.Errorf("unsupported data type for metric %q", config.Name)
-		}
-		if found {
-			continue
-		}
-		switch data := metrics.Data.(type) {
-		case metricdata.Sum[int64]:
-			data.DataPoints = append(data.DataPoints, metricdata.DataPoint[int64]{
-				StartTime:  startTime,
-				Time:       t,
-				Value:      0,
-				Attributes: attrSet,
-			})
-			metrics.Data = data
-		case metricdata.Sum[float64]:
-			data.DataPoints = append(data.DataPoints, metricdata.DataPoint[float64]{
-				StartTime:  startTime,
-				Time:       t,
-				Value:      0,
-				Attributes: attrSet,
-			})
-			metrics.Data = data
-		case metricdata.Histogram[float64]:
-			dp := newEmptyHistgramDataPonit[float64](startTime, t, attrSet, config.Boundaries)
-			data.DataPoints = append(data.DataPoints, dp)
-			metrics.Data = data
-		default:
-			return metrics, oops.Errorf("unsupported data type for metric %q", config.Name)
-		}
-	}
-	return metrics, nil
 }
 
 func LenDataPoints(data metricdata.Aggregation) int {
