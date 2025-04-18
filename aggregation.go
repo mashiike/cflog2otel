@@ -132,14 +132,19 @@ func aggregateMetric(ctx context.Context, metrics metricdata.Metrics, config Met
 	}
 }
 
+func getStartTimeAndTime(config MetricsConfig, t time.Time) (time.Time, time.Time) {
+	startTime := t.Truncate(config.AggregateInterval())
+	return startTime, startTime.Add(config.AggregateInterval())
+}
+
 func getAggregateAxis(ctx context.Context, config MetricsConfig, vars *CELVariables) (time.Time, time.Time, attribute.Set, error) {
-	t := vars.Log.Timestamp.Truncate(config.AggregateInterval())
 	attrs, err := ToAttributes(ctx, config.Attributes, vars)
 	if err != nil {
 		return time.Time{}, time.Time{}, attribute.Set{}, oops.Wrapf(err, "failed to convert attributes")
 	}
 	attrSet := attribute.NewSet(attrs...)
-	return t, t.Add(config.AggregateInterval()), attrSet, nil
+	startTime, t := getStartTimeAndTime(config, vars.Log.Timestamp)
+	return startTime, t, attrSet, nil
 }
 
 func aggregateForCountMetric(ctx context.Context, metrics metricdata.Metrics, config MetricsConfig, vars *CELVariables) (metricdata.Metrics, error) {
@@ -272,24 +277,29 @@ func aggregateForHistogramMetric(ctx context.Context, metrics metricdata.Metrics
 		break
 	}
 	if !found {
-		dp := metricdata.HistogramDataPoint[float64]{
-			StartTime:  startTime,
-			Time:       t,
-			Count:      0,
-			Sum:        0,
-			Attributes: attrSet,
-		}
-		if config.Boundaries != nil {
-			dp.Bounds = make([]float64, len(config.Boundaries))
-			copy(dp.Bounds, config.Boundaries)
-			dp.BucketCounts = make([]uint64, len(config.Boundaries)+1)
-		}
+		dp := newEmptyHistgramDataPonit[float64](startTime, t, attrSet, config.Boundaries)
 		data.DataPoints = append(data.DataPoints, dp)
 		targetDPIndex = len(data.DataPoints) - 1
 	}
 	data.DataPoints[targetDPIndex] = AppendValueToHistogramDataPoint(value, data.DataPoints[targetDPIndex], config.NoMinMax)
 	metrics.Data = data
 	return metrics, nil
+}
+
+func newEmptyHistgramDataPonit[N int64 | float64](startTime time.Time, t time.Time, attrSet attribute.Set, bounds []float64) metricdata.HistogramDataPoint[N] {
+	dp := metricdata.HistogramDataPoint[N]{
+		StartTime:  startTime,
+		Time:       t,
+		Count:      0,
+		Sum:        0,
+		Attributes: attrSet,
+	}
+	if bounds != nil {
+		dp.Bounds = make([]float64, len(bounds))
+		copy(dp.Bounds, bounds)
+		dp.BucketCounts = make([]uint64, len(bounds)+1)
+	}
+	return dp
 }
 
 func AppendValueToHistogramDataPoint[N int64 | float64](value N, dp metricdata.HistogramDataPoint[N], noMinMax bool) metricdata.HistogramDataPoint[N] {
