@@ -12,7 +12,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/fujiwara/lamblocal v0.0.4
 	github.com/fujiwara/ssm-lookup v0.1.0
-	github.com/google/cel-go v0.23.0
+	github.com/google/cel-go v0.24.1
 	github.com/google/go-jsonnet v0.20.0
 	github.com/ken39arg/go-flagx v0.0.0-20220608183922-7cf7c6c0093c
 	github.com/mashiike/slogutils v0.4.0
